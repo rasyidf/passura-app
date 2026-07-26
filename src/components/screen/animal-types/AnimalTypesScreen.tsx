@@ -1,16 +1,25 @@
 import { useState, useMemo } from "react";
 import { useLocalQuery } from "@/hooks/useLocalQuery";
 import { useCreateDoc, useUpdateDoc, useDeleteDoc } from "@/hooks/useLocalMutation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import DataTable from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Form, FormItem, FormLabel, FormControl, FormMessage, FormField } from "@/components/ui/form";
+import { Field, FieldLabel, FieldError } from "@/components/ui/field";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import type { AnimalType } from "@/db/types";
+import { Badge } from "@/components/ui/badge";
+
+const QUALITY_BADGE: Record<string, { label: string; className: string }> = {
+  low:    { label: "Rendah",     className: "bg-slate-100 text-slate-700 border-slate-200" },
+  medium: { label: "Sedang",     className: "bg-blue-100 text-blue-700 border-blue-200" },
+  high:   { label: "Tinggi",     className: "bg-green-100 text-green-700 border-green-200" },
+  unique: { label: "Unik/Langka", className: "bg-purple-100 text-purple-700 border-purple-200" },
+};
 
 type FormValues = { name: string; category: string; breed: string; geneticLine: string; quality: string; price: string };
 
@@ -28,9 +37,12 @@ export default function AnimalTypesScreen() {
 
   const columns: ColumnDef<AnimalType>[] = useMemo(() => [
     { accessorKey: "name", header: "Nama" },
-    { accessorKey: "category", header: "Kategori", cell: ({ row }) => row.original.category === "buffalo" ? "🐃 Kerbau" : "🐖 Babi" },
+    { accessorKey: "category", header: "Kategori", cell: ({ row }) => row.original.category === "buffalo" ? "Kerbau" : "Babi" },
     { accessorKey: "breed", header: "Ras" },
-    { accessorKey: "quality", header: "Kualitas" },
+    { accessorKey: "quality", header: "Kualitas", cell: ({ row }) => {
+      const q = QUALITY_BADGE[row.original.quality] ?? { label: row.original.quality, className: "bg-slate-100 text-slate-700 border-slate-200" };
+      return <Badge variant="outline" className={q.className}>{q.label}</Badge>;
+    }},
     { accessorKey: "price", header: "Harga (Rp)", cell: ({ row }) => `Rp ${(row.original.price || 0).toLocaleString("id-ID")}` },
   ], []);
 
@@ -85,46 +97,49 @@ function AnimalFormDialog({ open, onOpenChange, title, defaultValues, onSubmit, 
   defaultValues?: FormValues; onSubmit: (v: FormValues) => Promise<void>; loading: boolean;
 }) {
   const defaults: FormValues = defaultValues || { name: "", category: "buffalo", breed: "", geneticLine: "", quality: "medium", price: "" };
-  const methods = useForm<FormValues>({ defaultValues: defaults, values: defaults });
+  const { control, handleSubmit } = useForm<FormValues>({ defaultValues: defaults, values: defaults });
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
-        <Form {...methods}>
-          <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={methods.control} name="name" rules={{ required: "Wajib" }} render={({ field }) => (
-              <FormItem><FormLabel>Nama</FormLabel><FormControl><Input placeholder="Tedong Bonga" {...field} /></FormControl><FormMessage /></FormItem>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <Controller control={control} name="name" rules={{ required: "Wajib" }} render={({ field, fieldState }) => (
+            <Field><FieldLabel>Nama</FieldLabel><Input placeholder="Tedong Bonga" {...field} /><FieldError>{fieldState.error?.message}</FieldError></Field>
+          )} />
+          <div className="grid grid-cols-2 gap-4">
+            <Controller control={control} name="category" render={({ field }) => (
+              <Field><FieldLabel>Kategori</FieldLabel>
+                <NativeSelect {...field}>
+                  <NativeSelectOption value="buffalo">Kerbau</NativeSelectOption>
+                  <NativeSelectOption value="pig">Babi</NativeSelectOption>
+                </NativeSelect>
+              </Field>
             )} />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={methods.control} name="category" render={({ field }) => (
-                <FormItem><FormLabel>Kategori</FormLabel><FormControl>
-                  <select {...field} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                    <option value="buffalo">Kerbau</option><option value="pig">Babi</option>
-                  </select></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={methods.control} name="quality" render={({ field }) => (
-                <FormItem><FormLabel>Kualitas</FormLabel><FormControl>
-                  <select {...field} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                    <option value="low">Rendah</option><option value="medium">Sedang</option>
-                    <option value="high">Tinggi</option><option value="unique">Unik/Langka</option>
-                  </select></FormControl><FormMessage /></FormItem>
-              )} />
-            </div>
-            <FormField control={methods.control} name="breed" rules={{ required: "Wajib" }} render={({ field }) => (
-              <FormItem><FormLabel>Ras / Breed</FormLabel><FormControl><Input placeholder="Bonga, Saleko..." {...field} /></FormControl><FormMessage /></FormItem>
+            <Controller control={control} name="quality" render={({ field }) => (
+              <Field><FieldLabel>Kualitas</FieldLabel>
+                <NativeSelect {...field}>
+                  <NativeSelectOption value="low">Rendah</NativeSelectOption>
+                  <NativeSelectOption value="medium">Sedang</NativeSelectOption>
+                  <NativeSelectOption value="high">Tinggi</NativeSelectOption>
+                  <NativeSelectOption value="unique">Unik/Langka</NativeSelectOption>
+                </NativeSelect>
+              </Field>
             )} />
-            <FormField control={methods.control} name="geneticLine" render={({ field }) => (
-              <FormItem><FormLabel>Garis Keturunan</FormLabel><FormControl><Input placeholder="Noble, common..." {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={methods.control} name="price" rules={{ required: "Wajib" }} render={({ field }) => (
-              <FormItem><FormLabel>Harga (Rp)</FormLabel><FormControl><Input type="number" placeholder="80000000" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
-              <Button type="submit" disabled={loading}>{loading ? "Menyimpan..." : "Simpan"}</Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          </div>
+          <Controller control={control} name="breed" rules={{ required: "Wajib" }} render={({ field, fieldState }) => (
+            <Field><FieldLabel>Ras / Breed</FieldLabel><Input placeholder="Bonga, Saleko..." {...field} /><FieldError>{fieldState.error?.message}</FieldError></Field>
+          )} />
+          <Controller control={control} name="geneticLine" render={({ field }) => (
+            <Field><FieldLabel>Garis Keturunan</FieldLabel><Input placeholder="Noble, common..." {...field} /></Field>
+          )} />
+          <Controller control={control} name="price" rules={{ required: "Wajib" }} render={({ field, fieldState }) => (
+            <Field><FieldLabel>Harga (Rp)</FieldLabel><Input type="number" placeholder="80000000" {...field} /><FieldError>{fieldState.error?.message}</FieldError></Field>
+          )} />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
+            <Button type="submit" disabled={loading}>{loading ? "Menyimpan..." : "Simpan"}</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

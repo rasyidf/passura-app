@@ -42,6 +42,10 @@ export class PassuraDb extends Dexie {
       syncLog: "++id, entityType, entityId, action, [syncStatus+createdAt]",
       appConfig: "key",
     });
+
+    this.version(2).stores({
+      syncLog: "++id, entityType, entityId, action, syncStatus, [syncStatus+createdAt]",
+    });
   }
 }
 

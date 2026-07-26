@@ -5,10 +5,14 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { NotFound } from "@/components/NotFound";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/auth/session";
-import { Toaster } from "sonner";
+import { ThemeProvider } from "@/contexts/ThemeContext"; 
+// @ts-ignore
 import appCss from "@/styles.css?url";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toast";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,17 +43,22 @@ export const Route = createRootRoute({
     ],
   }),
   component: RootComponent,
+  notFoundComponent: NotFound,
 });
 
 function RootComponent() {
   return (
     <RootDocument>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Outlet />
-          <Toaster position="top-right" richColors />
-        </AuthProvider>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <TooltipProvider>
+              <Outlet />
+            </TooltipProvider>
+            <Toaster />
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </RootDocument>
   );
 }

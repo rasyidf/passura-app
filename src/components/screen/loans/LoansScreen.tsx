@@ -5,11 +5,27 @@ import DataTable from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
-import { Banknote } from "lucide-react";
+import { Banknote, ExternalLink } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import type { Loan, Clan, AnimalType, Repayment } from "@/db/types";
+
+function ClanLink({ id, name }: { id: string; name: string }) {
+  return (
+    <Link
+      to="/dashboard/clans"
+      className="inline-flex items-center gap-1 text-primary hover:underline underline-offset-2 font-medium text-sm"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {name || id}
+      <ExternalLink className="size-3 opacity-60" />
+    </Link>
+  );
+}
 
 export default function LoansScreen() {
   const { data, isLoading, refetch } = useLocalQuery<Loan>("loans");
@@ -37,12 +53,15 @@ export default function LoansScreen() {
   const columns: ColumnDef<any>[] = useMemo(() => [
     {
       accessorKey: "borrowerName", header: "Peminjam",
-      cell: ({ row }) => <span className="font-medium text-primary">{row.original.borrowerName}</span>,
+      cell: ({ row }) => <ClanLink id={row.original.borrower} name={row.original.borrowerName} />,
     },
-    { accessorKey: "lenderName", header: "Pemberi" },
+    {
+      accessorKey: "lenderName", header: "Pemberi",
+      cell: ({ row }) => <ClanLink id={row.original.lender} name={row.original.lenderName} />,
+    },
     {
       accessorKey: "loanType", header: "Jenis",
-      cell: ({ row }) => <Badge variant="outline">{row.original.loanType === "animal" ? "🐄 Hewan" : "💵 Uang"}</Badge>,
+      cell: ({ row }) => <Badge variant="outline">{row.original.loanType === "animal" ? "Hewan" : "Uang"}</Badge>,
     },
     {
       accessorKey: "calculatedPrincipalValue", header: "Pokok",
@@ -174,30 +193,29 @@ function QuickRepaymentDialog({ loan, animalTypes, onClose, onSuccess }: {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Jenis Pembayaran</label>
-            <select value={repaymentType} onChange={(e) => setRepaymentType(e.target.value)}
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-              <option value="money">Uang</option><option value="animal">Hewan</option>
-            </select>
+            <Label>Jenis Pembayaran</Label>
+            <NativeSelect value={repaymentType} onChange={(e) => setRepaymentType(e.target.value)}>
+              <NativeSelectOption value="money">Uang</NativeSelectOption>
+              <NativeSelectOption value="animal">Hewan</NativeSelectOption>
+            </NativeSelect>
           </div>
           {repaymentType === "money" && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Jumlah (Rp)</label>
+              <Label>Jumlah (Rp)</Label>
               <Input type="number" value={moneyAmount} onChange={(e) => setMoneyAmount(e.target.value)} placeholder="10000000" required />
             </div>
           )}
           {repaymentType === "animal" && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Hewan</label>
-                <select value={animalType} onChange={(e) => setAnimalType(e.target.value)}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm" required>
-                  <option value="">Pilih</option>
-                  {animalTypes.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
+                <Label>Hewan</Label>
+                <NativeSelect value={animalType} onChange={(e) => setAnimalType(e.target.value)} required>
+                  <NativeSelectOption value="">Pilih</NativeSelectOption>
+                  {animalTypes.map((a) => <NativeSelectOption key={a.id} value={a.id}>{a.name}</NativeSelectOption>)}
+                </NativeSelect>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Jumlah</label>
+                <Label>Jumlah</Label>
                 <Input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
               </div>
             </div>

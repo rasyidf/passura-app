@@ -3,6 +3,7 @@ import { generateId, hashPassword } from "@/auth/local-auth";
 import type {
   Clan,
   Elder,
+  Participant,
   AnimalType,
   Group,
   Loan,
@@ -129,6 +130,48 @@ export async function seedIfEmpty(): Promise<boolean> {
     updatedAt: now,
   };
   await db.groups.bulkAdd([group1, group2]);
+
+  // ─── Participants ─────────────────────────────────────────────────────
+  const participantsRaw: Omit<Participant, "syncStatus" | "createdAt" | "updatedAt">[] = [
+    // Tongkonan Rante
+    { id: generateId(), name: "Ne' Tato Dena",    clan: clans[0].id, role: "head" },
+    { id: generateId(), name: "Indo' Sura",        clan: clans[0].id, role: "member" },
+    { id: generateId(), name: "Ambe' Lai",         clan: clans[0].id, role: "member" },
+    { id: generateId(), name: "Rante Mallomo",     clan: clans[0].id, role: "member" },
+    { id: generateId(), name: "Puang Rante",       clan: clans[0].id, role: "ancestor", notes: "Leluhur pendiri" },
+    { id: generateId(), name: "Tandi Puang",       clan: clans[0].id, role: "member" },
+    { id: generateId(), name: "Sanda Bua'",        clan: clans[0].id, role: "member" },
+    // Tongkonan Sanggalangit
+    { id: generateId(), name: "Ne' Bua' Sarong",   clan: clans[1].id, role: "head" },
+    { id: generateId(), name: "Indo' Mangkau",     clan: clans[1].id, role: "member" },
+    { id: generateId(), name: "Ambe' Tera",        clan: clans[1].id, role: "member" },
+    { id: generateId(), name: "Sanggalangit Tua",  clan: clans[1].id, role: "ancestor", notes: "Generasi pertama" },
+    { id: generateId(), name: "Duma Sarong",       clan: clans[1].id, role: "member" },
+    // Tongkonan Buntu Pune
+    { id: generateId(), name: "Ambe' Rante",       clan: clans[2].id, role: "head" },
+    { id: generateId(), name: "Indo' Buntu",       clan: clans[2].id, role: "member" },
+    { id: generateId(), name: "Pune Malim",        clan: clans[2].id, role: "member" },
+    { id: generateId(), name: "Nenek Pune",        clan: clans[2].id, role: "ancestor" },
+    { id: generateId(), name: "Rante Pune",        clan: clans[2].id, role: "member" },
+    // Tongkonan Ke'pe' Tinoring
+    { id: generateId(), name: "Ne' Kepe' Bua'",    clan: clans[3].id, role: "head" },
+    { id: generateId(), name: "Indo' Tinoring",    clan: clans[3].id, role: "member" },
+    { id: generateId(), name: "Ambe' Kepe'",       clan: clans[3].id, role: "member" },
+    { id: generateId(), name: "Tinoring Lama",     clan: clans[3].id, role: "ancestor" },
+    // Tongkonan Olang
+    { id: generateId(), name: "Ne' Olang Sura'",   clan: clans[4].id, role: "head" },
+    { id: generateId(), name: "Indo' Sesean",      clan: clans[4].id, role: "member" },
+    { id: generateId(), name: "Ambe' Olang",       clan: clans[4].id, role: "member" },
+    { id: generateId(), name: "Olang Puang",       clan: clans[4].id, role: "ancestor" },
+    { id: generateId(), name: "Sura' Olang",       clan: clans[4].id, role: "member" },
+  ];
+  const participants: Participant[] = participantsRaw.map((p) => ({
+    ...p,
+    syncStatus: "local" as const,
+    createdAt: now,
+    updatedAt: now,
+  }));
+  await db.participants.bulkAdd(participants);
 
   // ─── Loans ────────────────────────────────────────────────────────────
   const loansData: Loan[] = [

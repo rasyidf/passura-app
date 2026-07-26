@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useLocalQuery } from "@/hooks/useLocalQuery";
 import { useCreateDoc, useUpdateDoc, useDeleteDoc } from "@/hooks/useLocalMutation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import DataTable from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Form, FormItem, FormLabel, FormControl, FormMessage, FormField } from "@/components/ui/form";
+import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
@@ -90,28 +90,38 @@ function GroupFormDialog({ open, onOpenChange, title, defaultValues, onSubmit, l
   defaultValues?: FormValues; onSubmit: (v: FormValues) => Promise<void>; loading: boolean;
 }) {
   const defaults = defaultValues || { name: "", eventName: "", description: "" };
-  const methods = useForm<FormValues>({ defaultValues: defaults, values: defaults });
+  const { control, handleSubmit } = useForm<FormValues>({ defaultValues: defaults, values: defaults });
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
-        <Form {...methods}>
-          <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField control={methods.control} name="name" rules={{ required: "Nama wajib diisi" }} render={({ field }) => (
-              <FormItem><FormLabel>Nama Grup</FormLabel><FormControl><Input placeholder="Rambu Solo' Kampung X" {...field} /></FormControl><FormMessage /></FormItem>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <Controller control={control} name="name" rules={{ required: "Nama wajib diisi" }} render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Nama Grup</FieldLabel>
+                <Input id={field.name} placeholder="Rambu Solo' Kampung X" aria-invalid={fieldState.invalid} {...field} />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
             )} />
-            <FormField control={methods.control} name="eventName" render={({ field }) => (
-              <FormItem><FormLabel>Nama Acara</FormLabel><FormControl><Input placeholder="Rambu Solo'" {...field} /></FormControl><FormMessage /></FormItem>
+            <Controller control={control} name="eventName" render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Nama Acara</FieldLabel>
+                <Input id={field.name} placeholder="Rambu Solo'" aria-invalid={fieldState.invalid} {...field} />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
             )} />
-            <FormField control={methods.control} name="description" render={({ field }) => (
-              <FormItem><FormLabel>Deskripsi</FormLabel><FormControl><Textarea placeholder="Keterangan grup..." {...field} /></FormControl><FormMessage /></FormItem>
+            <Controller control={control} name="description" render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={field.name}>Deskripsi</FieldLabel>
+                <Textarea id={field.name} placeholder="Keterangan grup..." aria-invalid={fieldState.invalid} {...field} />
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
             )} />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
               <Button type="submit" disabled={loading}>{loading ? "Menyimpan..." : "Simpan"}</Button>
             </DialogFooter>
           </form>
-        </Form>
       </DialogContent>
     </Dialog>
   );

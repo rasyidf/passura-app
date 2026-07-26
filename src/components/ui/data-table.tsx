@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./table";
 import { Button } from "./button";
 import { Input } from "./input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
 import {
     ArrowUpDown,
     ArrowUp,
@@ -247,9 +248,9 @@ export function DataTable<T extends { id?: string | number }>({
     const displayRowCount = table.getFilteredRowModel().rows.length;
 
     return (
-        <div className={cn("space-y-4", className)}>
+        <div className={cn("rounded-xl border bg-card shadow-sm", className)}>
             {/* Toolbar: Search and Filters */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b">
                 {/* Global Search */}
                 <div className="relative w-full sm:w-64">
                     <Input
@@ -279,19 +280,23 @@ export function DataTable<T extends { id?: string | number }>({
 
                     if (filter.type === "select" && filter.options) {
                         return (
-                            <select
+                            <Select
                                 key={filter.id}
-                                className="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
                                 value={String(column.getFilterValue() ?? "")}
-                                onChange={(e) => column.setFilterValue(e.target.value || undefined)}
+                                onValueChange={(v) => column.setFilterValue(v === "__all__" ? undefined : v)}
                             >
-                                <option value="">{filter.placeholder || `Semua ${filter.label}`}</option>
-                                {filter.options.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
+                                <SelectTrigger className="h-9 w-auto min-w-[140px]">
+                                    <SelectValue placeholder={filter.placeholder || `Semua ${filter.label}`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__all__">{filter.placeholder || `Semua ${filter.label}`}</SelectItem>
+                                    {filter.options.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         );
                     }
 
@@ -361,8 +366,8 @@ export function DataTable<T extends { id?: string | number }>({
             </div>
 
             {/* Table */}
-            <div className="rounded-md border">
-                <Table>
+            <div className="overflow-auto">
+                <Table className="bg-card">
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
@@ -449,31 +454,35 @@ export function DataTable<T extends { id?: string | number }>({
             </div>
 
             {/* Pagination Controls */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm px-4 py-3 border-t bg-muted/30">
                 <div className="text-muted-foreground">
                     {enableSelection && Object.keys(rowSelection).length > 0 && (
                         <span className="mr-2">
-                            {Object.keys(rowSelection).length} of {displayRowCount} row(s) selected
+                            {Object.keys(rowSelection).length} dari {displayRowCount} data dipilih
                         </span>
                     )}
                     <span>
-                        Page {pageIndex + 1} of {pageCount}
+                        Halaman {pageIndex + 1} dari {pageCount}
                     </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                     {/* Page Size Selector */}
-                    <select
-                        className="h-8 rounded-md border border-input bg-background px-2 text-xs shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
-                        value={pageSize}
-                        onChange={(e) => table.setPageSize(Number(e.target.value))}
+                    <Select
+                        value={String(pageSize)}
+                        onValueChange={(v) => table.setPageSize(Number(v))}
                     >
-                        {pageSizeOptions.map((size) => (
-                            <option key={size} value={size}>
-                                {size} / halaman
-                            </option>
-                        ))}
-                    </select>
+                        <SelectTrigger className="h-8 w-auto text-xs">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {pageSizeOptions.map((size) => (
+                                <SelectItem key={size} value={String(size)} className="text-xs">
+                                    {size} / halaman
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
                     {/* Pagination Buttons */}
                     <div className="flex items-center gap-1">

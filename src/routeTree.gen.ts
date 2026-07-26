@@ -14,6 +14,7 @@ import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardAnimalTypesRouteImport } from './routes/dashboard/animal-types'
+import { Route as DashboardBackupRouteImport } from './routes/dashboard/backup'
 import { Route as DashboardClansRouteImport } from './routes/dashboard/clans'
 import { Route as DashboardGroupsRouteImport } from './routes/dashboard/groups'
 import { Route as DashboardHandoversRouteImport } from './routes/dashboard/handovers'
@@ -22,6 +23,7 @@ import { Route as DashboardObligationsRouteImport } from './routes/dashboard/obl
 import { Route as DashboardParticipantsRouteImport } from './routes/dashboard/participants'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardReceiptsRouteImport } from './routes/dashboard/receipts'
+import { Route as DashboardSyncRouteImport } from './routes/dashboard/sync'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +48,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
 const DashboardAnimalTypesRoute = DashboardAnimalTypesRouteImport.update({
   id: '/animal-types',
   path: '/animal-types',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardBackupRoute = DashboardBackupRouteImport.update({
+  id: '/backup',
+  path: '/backup',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardClansRoute = DashboardClansRouteImport.update({
@@ -88,12 +95,18 @@ const DashboardReceiptsRoute = DashboardReceiptsRouteImport.update({
   path: '/receipts',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardSyncRoute = DashboardSyncRouteImport.update({
+  id: '/sync',
+  path: '/sync',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/dashboard/animal-types': typeof DashboardAnimalTypesRoute
+  '/dashboard/backup': typeof DashboardBackupRoute
   '/dashboard/clans': typeof DashboardClansRoute
   '/dashboard/groups': typeof DashboardGroupsRoute
   '/dashboard/handovers': typeof DashboardHandoversRoute
@@ -102,12 +115,14 @@ export interface FileRoutesByFullPath {
   '/dashboard/participants': typeof DashboardParticipantsRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
+  '/dashboard/sync': typeof DashboardSyncRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard/animal-types': typeof DashboardAnimalTypesRoute
+  '/dashboard/backup': typeof DashboardBackupRoute
   '/dashboard/clans': typeof DashboardClansRoute
   '/dashboard/groups': typeof DashboardGroupsRoute
   '/dashboard/handovers': typeof DashboardHandoversRoute
@@ -116,6 +131,7 @@ export interface FileRoutesByTo {
   '/dashboard/participants': typeof DashboardParticipantsRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
+  '/dashboard/sync': typeof DashboardSyncRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -124,6 +140,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/dashboard/animal-types': typeof DashboardAnimalTypesRoute
+  '/dashboard/backup': typeof DashboardBackupRoute
   '/dashboard/clans': typeof DashboardClansRoute
   '/dashboard/groups': typeof DashboardGroupsRoute
   '/dashboard/handovers': typeof DashboardHandoversRoute
@@ -132,6 +149,7 @@ export interface FileRoutesById {
   '/dashboard/participants': typeof DashboardParticipantsRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
+  '/dashboard/sync': typeof DashboardSyncRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -141,6 +159,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/dashboard/animal-types'
+    | '/dashboard/backup'
     | '/dashboard/clans'
     | '/dashboard/groups'
     | '/dashboard/handovers'
@@ -149,12 +168,14 @@ export interface FileRouteTypes {
     | '/dashboard/participants'
     | '/dashboard/profile'
     | '/dashboard/receipts'
+    | '/dashboard/sync'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/dashboard/animal-types'
+    | '/dashboard/backup'
     | '/dashboard/clans'
     | '/dashboard/groups'
     | '/dashboard/handovers'
@@ -163,6 +184,7 @@ export interface FileRouteTypes {
     | '/dashboard/participants'
     | '/dashboard/profile'
     | '/dashboard/receipts'
+    | '/dashboard/sync'
     | '/dashboard'
   id:
     | '__root__'
@@ -170,6 +192,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/dashboard/animal-types'
+    | '/dashboard/backup'
     | '/dashboard/clans'
     | '/dashboard/groups'
     | '/dashboard/handovers'
@@ -178,6 +201,7 @@ export interface FileRouteTypes {
     | '/dashboard/participants'
     | '/dashboard/profile'
     | '/dashboard/receipts'
+    | '/dashboard/sync'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -222,6 +246,13 @@ declare module '@tanstack/react-router' {
       path: '/animal-types'
       fullPath: '/dashboard/animal-types'
       preLoaderRoute: typeof DashboardAnimalTypesRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/backup': {
+      id: '/dashboard/backup'
+      path: '/backup'
+      fullPath: '/dashboard/backup'
+      preLoaderRoute: typeof DashboardBackupRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/clans': {
@@ -280,11 +311,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardReceiptsRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/sync': {
+      id: '/dashboard/sync'
+      path: '/sync'
+      fullPath: '/dashboard/sync'
+      preLoaderRoute: typeof DashboardSyncRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
   }
 }
 
 interface DashboardRouteRouteChildren {
   DashboardAnimalTypesRoute: typeof DashboardAnimalTypesRoute
+  DashboardBackupRoute: typeof DashboardBackupRoute
   DashboardClansRoute: typeof DashboardClansRoute
   DashboardGroupsRoute: typeof DashboardGroupsRoute
   DashboardHandoversRoute: typeof DashboardHandoversRoute
@@ -293,11 +332,13 @@ interface DashboardRouteRouteChildren {
   DashboardParticipantsRoute: typeof DashboardParticipantsRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardReceiptsRoute: typeof DashboardReceiptsRoute
+  DashboardSyncRoute: typeof DashboardSyncRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardAnimalTypesRoute: DashboardAnimalTypesRoute,
+  DashboardBackupRoute: DashboardBackupRoute,
   DashboardClansRoute: DashboardClansRoute,
   DashboardGroupsRoute: DashboardGroupsRoute,
   DashboardHandoversRoute: DashboardHandoversRoute,
@@ -306,6 +347,7 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardParticipantsRoute: DashboardParticipantsRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardReceiptsRoute: DashboardReceiptsRoute,
+  DashboardSyncRoute: DashboardSyncRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 

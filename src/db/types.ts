@@ -148,7 +148,7 @@ export interface SyncLogEntry {
   entityId: string;
   action: "create" | "update" | "delete";
   data: Record<string, unknown>;
-  syncStatus: "pending" | "synced" | "failed";
+  syncStatus: "pending" | "synced" | "failed" | "conflict";
   createdAt: number;
 }
 

@@ -80,10 +80,8 @@ function Modal({
         </DrawerHeader>
         {scrollable ? <ScrollArea className="overflow-y-auto">{children}</ScrollArea> : children}
         <DrawerFooter className="pt-2">
-          <DrawerClose asChild>
-            <Button className="min-w-48" variant="outline" size="sm" type="button">
-              <span className="opacity-75">Dismiss</span>
-            </Button>
+          <DrawerClose render={<Button className="min-w-48" variant="outline" size="sm" type="button" />}>
+            <span className="opacity-75">Dismiss</span>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
