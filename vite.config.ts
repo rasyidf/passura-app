@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { tanstackRouter  } from "@tanstack/router-plugin/vite";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -14,8 +14,74 @@ export default defineConfig({
       "@": resolve(__dirname, "src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // ── Heavy visualisation libs ──────────────────────────────────
+          if (id.includes("@xyflow") || id.includes("@dagrejs")) {
+            return "vendor-flow";
+          }
+          // ── Date utilities ────────────────────────────────────────────
+          if (id.includes("date-fns")) {
+            return "vendor-date";
+          }
+          // ── Charting ─────────────────────────────────────────────────
+          if (id.includes("recharts") || id.includes("/d3-")) {
+            return "vendor-charts";
+          }
+          // ── Core React ───────────────────────────────────────────────
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/") ||
+            id.includes("node_modules/react-hook-form") ||
+            id.includes("node_modules/scheduler/")
+          ) {
+            return "vendor-react";
+          }
+          // ── TanStack ──────────────────────────────────────────────────
+          if (id.includes("@tanstack")) {
+            return "vendor-tanstack";
+          }
+          // ── UI primitives ─────────────────────────────────────────────
+          if (
+            id.includes("@base-ui") ||
+            id.includes("cmdk") ||
+            id.includes("lucide-react")
+          ) {
+            return "vendor-ui";
+          }
+          // ── Local DB ──────────────────────────────────────────────────
+          if (id.includes("dexie")) {
+            return "vendor-db";
+          }
+          // ── Screen route chunks ───────────────────────────────────────
+          const screens = [
+            "clans", "loans", "receipts", "handovers", "obligations",
+            "participants", "groups", "animal-types", "backup", "sync",
+            "profile", "dashboard",
+          ];
+          for (const screen of screens) {
+            if (
+              id.includes(`/routes/dashboard/${screen}`) ||
+              id.includes(`/screen/${screen}`)
+            ) {
+              return `route-${screen}`;
+            }
+          }
+          if (id.includes("/routes/login") || id.includes("/auth/")) {
+            return "route-auth";
+          }
+          // ── Remaining node_modules ────────────────────────────────────
+          if (id.includes("node_modules")) {
+            return "vendor-misc";
+          }
+        },
+      },
+    },
+  },
   plugins: [
-    tanstackRouter ({ routesDirectory: "src/routes" }),
+    TanStackRouterVite({ routesDirectory: "src/routes" }),
     react(),
     tailwindcss(),
     VitePWA({
