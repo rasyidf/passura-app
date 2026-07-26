@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/auth/session";
+import { SyncStatusBar } from "./SyncStatusBar";
 import {
   LayoutDashboard,
   Users,
@@ -88,6 +89,7 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+      <SyncStatusBar />
     </>
   );
 

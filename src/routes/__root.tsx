@@ -8,6 +8,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/auth/session";
 import { Toaster } from "sonner";
+import appCss from "@/styles.css?url";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +35,7 @@ export const Route = createRootRoute({
     links: [
       { rel: "icon", href: "/favicon.ico" },
       { rel: "apple-touch-icon", href: "/images/icon-192.png" },
+      { rel: "stylesheet", href: appCss },
     ],
   }),
   component: RootComponent,

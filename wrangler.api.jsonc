@@ -1,0 +1,18 @@
+{
+  "name": "passura-api",
+  "compatibility_date": "2026-07-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "api/src/index.ts",
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "passura-sync",
+      "database_id": "REPLACE_WITH_YOUR_D1_ID",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "vars": {
+    "JWT_SECRET": "change-me-in-production-use-wrangler-secrets"
+  }
+}

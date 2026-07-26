@@ -23,7 +23,7 @@ export interface Elder extends BaseEntity {
   passwordHash: string; // PBKDF2 hash
   salt: string;
   clan?: string; // clan ID
-  role: "validator" | "participant";
+  role: "superadmin" | "validator" | "participant";
 }
 
 // ─── Participants ────────────────────────────────────────────────────────────

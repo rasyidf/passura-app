@@ -55,6 +55,23 @@ export async function seedIfEmpty(): Promise<boolean> {
 
   // ─── Elders ───────────────────────────────────────────────────────────
   const { hash: elderHash, salt: elderSalt } = await hashPassword("elder123");
+  const { hash: adminHash, salt: adminSalt } = await hashPassword("passura123");
+
+  // Admin elder (full access)
+  const adminElder: Elder = {
+    id: generateId(),
+    name: "Admin Passura",
+    email: "admin@passura.local",
+    passwordHash: adminHash,
+    salt: adminSalt,
+    clan: clans[0].id,
+    role: "superadmin",
+    syncStatus: "local",
+    createdAt: now,
+    updatedAt: now,
+  };
+  await db.elders.add(adminElder);
+
   const eldersData = [
     { name: "Ne' Tato Dena", clan: clans[0].id, role: "validator" as const },
     { name: "Ne' Bua' Sarong", clan: clans[1].id, role: "validator" as const },
@@ -256,6 +273,7 @@ export async function seedIfEmpty(): Promise<boolean> {
   await db.handovers.bulkAdd(handoversData);
 
   console.log("🌱 Demo seeding complete!");
-  console.log("  👴 Elder: rante-ne-tato-dena@passura.local / elder123");
+  console.log("  � Admin: admin@passura.local / passura123");
+  console.log("  �👴 Elder: rante-ne-tato-dena@passura.local / elder123");
   return true;
 }
