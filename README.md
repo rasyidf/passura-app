@@ -1,4 +1,4 @@
-# Passura App
+# Passura - Buku Besar Adat Digital
 
 > Buku Besar Adat Digital — Toraja's open-source offline-first ledger system.
 
