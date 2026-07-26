@@ -58,7 +58,7 @@ export default function AnimalTypesScreen() {
           <h1 className="text-xl font-semibold">Jenis Hewan</h1>
           <p className="text-sm text-muted-foreground">Kelola jenis kerbau dan babi beserta harga pasar.</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="gap-2"><Plus className="size-4" /> Tambah Jenis</Button>
+        <Button onClick={() => setShowCreate(true)} size="lg" className="gap-2"><Plus className="size-4" /> Tambah Jenis</Button>
       </div>
 
       <DataTable data={rows} columns={columns} searchableColumnIds={["name", "breed", "quality"]}

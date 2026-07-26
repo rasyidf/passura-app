@@ -9,12 +9,34 @@ import type {
   Loan,
   Receipt,
   Handover,
+  ParticipantRelation,
 } from "./types";
 
 /**
- * Seeds demo data into IndexedDB on first run (when no elders exist).
+ * Module-level singleton promise.
+ * The first call runs the seed; every subsequent call (including concurrent
+ * ones from React Strict Mode double-effects) reuses the same promise and
+ * waits for the single run to finish.
  */
-export async function seedIfEmpty(): Promise<boolean> {
+let seedPromise: Promise<boolean> | null = null;
+
+/**
+ * Seeds demo data into IndexedDB on first run (when no elders exist).
+ * Uses bulkPut (upsert) so re-running is always safe and idempotent.
+ * Safe to call multiple times concurrently — only one seed ever executes.
+ */
+export function seedIfEmpty(): Promise<boolean> {
+  if (!seedPromise) {
+    seedPromise = _runSeed().catch((err) => {
+      // Reset so the next call can retry on error
+      seedPromise = null;
+      throw err;
+    });
+  }
+  return seedPromise;
+}
+
+async function _runSeed(): Promise<boolean> {
   const elderCount = await db.elders.count();
   if (elderCount > 0) return false; // Already seeded
 
@@ -35,7 +57,7 @@ export async function seedIfEmpty(): Promise<boolean> {
     createdAt: now,
     updatedAt: now,
   }));
-  await db.animalTypes.bulkAdd(animals);
+  await db.animalTypes.bulkPut(animals);
 
   // ─── Clans ────────────────────────────────────────────────────────────
   const clanNames = [
@@ -52,7 +74,7 @@ export async function seedIfEmpty(): Promise<boolean> {
     createdAt: now,
     updatedAt: now,
   }));
-  await db.clans.bulkAdd(clans);
+  await db.clans.bulkPut(clans);
 
   // ─── Elders ───────────────────────────────────────────────────────────
   const { hash: elderHash, salt: elderSalt } = await hashPassword("elder123");
@@ -71,7 +93,7 @@ export async function seedIfEmpty(): Promise<boolean> {
     createdAt: now,
     updatedAt: now,
   };
-  await db.elders.add(adminElder);
+  await db.elders.put(adminElder);
 
   const eldersData = [
     { name: "Ne' Tato Dena", clan: clans[0].id, role: "validator" as const },
@@ -106,7 +128,7 @@ export async function seedIfEmpty(): Promise<boolean> {
     };
     elders.push(elder);
   }
-  await db.elders.bulkAdd(elders);
+  await db.elders.bulkPut(elders);
 
   // ─── Groups ───────────────────────────────────────────────────────────
   const group1: Group = {
@@ -129,41 +151,51 @@ export async function seedIfEmpty(): Promise<boolean> {
     createdAt: now,
     updatedAt: now,
   };
-  await db.groups.bulkAdd([group1, group2]);
+  await db.groups.bulkPut([group1, group2]);
 
   // ─── Participants ─────────────────────────────────────────────────────
+  // IDs defined upfront so relations can reference them
+  const pId = Array.from({ length: 26 }, () => generateId());
+  // [0-6]  Tongkonan Rante
+  // [7-11] Tongkonan Sanggalangit
+  // [12-16] Tongkonan Buntu Pune
+  // [17-20] Tongkonan Ke'pe' Tinoring
+  // [21-25] Tongkonan Olang
+
+  const rel = (type: ParticipantRelation["type"], id: string): ParticipantRelation => ({ type, participantId: id });
+
   const participantsRaw: Omit<Participant, "syncStatus" | "createdAt" | "updatedAt">[] = [
-    // Tongkonan Rante
-    { id: generateId(), name: "Ne' Tato Dena",    clan: clans[0].id, role: "head" },
-    { id: generateId(), name: "Indo' Sura",        clan: clans[0].id, role: "member" },
-    { id: generateId(), name: "Ambe' Lai",         clan: clans[0].id, role: "member" },
-    { id: generateId(), name: "Rante Mallomo",     clan: clans[0].id, role: "member" },
-    { id: generateId(), name: "Puang Rante",       clan: clans[0].id, role: "ancestor", notes: "Leluhur pendiri" },
-    { id: generateId(), name: "Tandi Puang",       clan: clans[0].id, role: "member" },
-    { id: generateId(), name: "Sanda Bua'",        clan: clans[0].id, role: "member" },
-    // Tongkonan Sanggalangit
-    { id: generateId(), name: "Ne' Bua' Sarong",   clan: clans[1].id, role: "head" },
-    { id: generateId(), name: "Indo' Mangkau",     clan: clans[1].id, role: "member" },
-    { id: generateId(), name: "Ambe' Tera",        clan: clans[1].id, role: "member" },
-    { id: generateId(), name: "Sanggalangit Tua",  clan: clans[1].id, role: "ancestor", notes: "Generasi pertama" },
-    { id: generateId(), name: "Duma Sarong",       clan: clans[1].id, role: "member" },
-    // Tongkonan Buntu Pune
-    { id: generateId(), name: "Ambe' Rante",       clan: clans[2].id, role: "head" },
-    { id: generateId(), name: "Indo' Buntu",       clan: clans[2].id, role: "member" },
-    { id: generateId(), name: "Pune Malim",        clan: clans[2].id, role: "member" },
-    { id: generateId(), name: "Nenek Pune",        clan: clans[2].id, role: "ancestor" },
-    { id: generateId(), name: "Rante Pune",        clan: clans[2].id, role: "member" },
-    // Tongkonan Ke'pe' Tinoring
-    { id: generateId(), name: "Ne' Kepe' Bua'",    clan: clans[3].id, role: "head" },
-    { id: generateId(), name: "Indo' Tinoring",    clan: clans[3].id, role: "member" },
-    { id: generateId(), name: "Ambe' Kepe'",       clan: clans[3].id, role: "member" },
-    { id: generateId(), name: "Tinoring Lama",     clan: clans[3].id, role: "ancestor" },
-    // Tongkonan Olang
-    { id: generateId(), name: "Ne' Olang Sura'",   clan: clans[4].id, role: "head" },
-    { id: generateId(), name: "Indo' Sesean",      clan: clans[4].id, role: "member" },
-    { id: generateId(), name: "Ambe' Olang",       clan: clans[4].id, role: "member" },
-    { id: generateId(), name: "Olang Puang",       clan: clans[4].id, role: "ancestor" },
-    { id: generateId(), name: "Sura' Olang",       clan: clans[4].id, role: "member" },
+    // ── Tongkonan Rante ──────────────────────────────────────────────────
+    { id: pId[0], name: "Puang Rante",    clan: clans[0].id, role: "ancestor", gender: "male",   notes: "Leluhur pendiri" },
+    { id: pId[1], name: "Ne' Tato Dena",  clan: clans[0].id, role: "head",     gender: "male",   relations: [rel("father", pId[0])] },
+    { id: pId[2], name: "Indo' Sura",     clan: clans[0].id, role: "member",   gender: "female", relations: [rel("spouse", pId[1])] },
+    { id: pId[3], name: "Rante Mallomo",  clan: clans[0].id, role: "member",   gender: "male",   relations: [rel("father", pId[1]), rel("mother", pId[2])] },
+    { id: pId[4], name: "Sanda Bua'",     clan: clans[0].id, role: "member",   gender: "female", relations: [rel("father", pId[1]), rel("mother", pId[2])] },
+    { id: pId[5], name: "Ambe' Lai",      clan: clans[0].id, role: "member",   gender: "male",   relations: [rel("father", pId[1]), rel("mother", pId[2])] },
+    { id: pId[6], name: "Tandi Puang",    clan: clans[0].id, role: "member",   gender: "male",   relations: [rel("father", pId[3])] },
+    // ── Tongkonan Sanggalangit ───────────────────────────────────────────
+    { id: pId[7],  name: "Sanggalangit Tua", clan: clans[1].id, role: "ancestor", gender: "male" },
+    { id: pId[8],  name: "Ne' Bua' Sarong",  clan: clans[1].id, role: "head",     gender: "male",   relations: [rel("father", pId[7])] },
+    { id: pId[9],  name: "Indo' Mangkau",    clan: clans[1].id, role: "member",   gender: "female", relations: [rel("spouse", pId[8])] },
+    { id: pId[10], name: "Ambe' Tera",       clan: clans[1].id, role: "member",   gender: "male",   relations: [rel("father", pId[8]), rel("mother", pId[9])] },
+    { id: pId[11], name: "Duma Sarong",      clan: clans[1].id, role: "member",   gender: "female", relations: [rel("father", pId[8]), rel("mother", pId[9])] },
+    // ── Tongkonan Buntu Pune ─────────────────────────────────────────────
+    { id: pId[12], name: "Nenek Pune",  clan: clans[2].id, role: "ancestor", gender: "female" },
+    { id: pId[13], name: "Ambe' Rante", clan: clans[2].id, role: "head",     gender: "male",   relations: [rel("mother", pId[12])] },
+    { id: pId[14], name: "Indo' Buntu", clan: clans[2].id, role: "member",   gender: "female", relations: [rel("spouse", pId[13])] },
+    { id: pId[15], name: "Pune Malim",  clan: clans[2].id, role: "member",   gender: "male",   relations: [rel("father", pId[13]), rel("mother", pId[14])] },
+    { id: pId[16], name: "Rante Pune",  clan: clans[2].id, role: "member",   gender: "male",   relations: [rel("father", pId[13]), rel("mother", pId[14])] },
+    // ── Tongkonan Ke'pe' Tinoring ────────────────────────────────────────
+    { id: pId[17], name: "Tinoring Lama",   clan: clans[3].id, role: "ancestor", gender: "male" },
+    { id: pId[18], name: "Ne' Kepe' Bua'",  clan: clans[3].id, role: "head",     gender: "male",   relations: [rel("father", pId[17])] },
+    { id: pId[19], name: "Indo' Tinoring",  clan: clans[3].id, role: "member",   gender: "female", relations: [rel("spouse", pId[18])] },
+    { id: pId[20], name: "Ambe' Kepe'",     clan: clans[3].id, role: "member",   gender: "male",   relations: [rel("father", pId[18]), rel("mother", pId[19])] },
+    // ── Tongkonan Olang ──────────────────────────────────────────────────
+    { id: pId[21], name: "Olang Puang",    clan: clans[4].id, role: "ancestor", gender: "male" },
+    { id: pId[22], name: "Ne' Olang Sura'",clan: clans[4].id, role: "head",     gender: "male",   relations: [rel("father", pId[21])] },
+    { id: pId[23], name: "Indo' Sesean",   clan: clans[4].id, role: "member",   gender: "female", relations: [rel("spouse", pId[22])] },
+    { id: pId[24], name: "Ambe' Olang",    clan: clans[4].id, role: "member",   gender: "male",   relations: [rel("father", pId[22]), rel("mother", pId[23])] },
+    { id: pId[25], name: "Sura' Olang",    clan: clans[4].id, role: "member",   gender: "female", relations: [rel("father", pId[22]), rel("mother", pId[23])] },
   ];
   const participants: Participant[] = participantsRaw.map((p) => ({
     ...p,
@@ -171,7 +203,7 @@ export async function seedIfEmpty(): Promise<boolean> {
     createdAt: now,
     updatedAt: now,
   }));
-  await db.participants.bulkAdd(participants);
+  await db.participants.bulkPut(participants);
 
   // ─── Loans ────────────────────────────────────────────────────────────
   const loansData: Loan[] = [
@@ -235,7 +267,7 @@ export async function seedIfEmpty(): Promise<boolean> {
       updatedAt: now,
     },
   ];
-  await db.loans.bulkAdd(loansData);
+  await db.loans.bulkPut(loansData);
 
   // ─── Receipts ─────────────────────────────────────────────────────────
   const receiptsData: Receipt[] = [
@@ -275,7 +307,7 @@ export async function seedIfEmpty(): Promise<boolean> {
       updatedAt: now,
     },
   ];
-  await db.receipts.bulkAdd(receiptsData);
+  await db.receipts.bulkPut(receiptsData);
 
   // ─── Handovers ────────────────────────────────────────────────────────
   const handoversData: Handover[] = [
@@ -313,10 +345,11 @@ export async function seedIfEmpty(): Promise<boolean> {
       updatedAt: now,
     },
   ];
-  await db.handovers.bulkAdd(handoversData);
+  await db.handovers.bulkPut(handoversData);
 
   console.log("🌱 Demo seeding complete!");
   console.log("  � Admin: admin@passura.local / passura123");
   console.log("  �👴 Elder: rante-ne-tato-dena@passura.local / elder123");
   return true;
 }
+

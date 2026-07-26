@@ -32,7 +32,7 @@ export function ParticipantStep1Welcome({ onNext, isLoading }: ParticipantStep1W
         <p>Dalam panduan singkat ini, Anda akan:</p>
         <ul className="list-disc pl-6 space-y-2">
           <li>
-            <strong>Memilih Clan Anda</strong> — mengaitkan akun Anda dengan
+            <strong>Memilih Rumpun Keluarga Anda</strong> — mengaitkan akun Anda dengan
             Tongkonan (rumah adat) yang sesuai.
           </li>
           <li>

@@ -16,20 +16,20 @@ export function ElderStep2Clans({ onNext, onBack, isLoading }: ElderStep2ClansPr
     <StepCard
       stepIndex={1}
       totalSteps={5}
-      title="Apa itu Clan?"
+      title="Apa itu Rumpun Keluarga?"
       onNext={onNext}
       onBack={onBack}
       isLoading={isLoading}
     >
       <div className="space-y-4 text-lg">
         <p>
-          Dalam aplikasi ini, <strong>Clan</strong> (juga dikenal sebagai{' '}
+          Dalam aplikasi ini, <strong>Rumpun Keluarga</strong> (juga dikenal sebagai{' '}
           <strong>Tongkonan</strong>) adalah unit rumah tangga atau garis
           keturunan dalam komunitas adat Toraja.
         </p>
         <p>
           Setiap transaksi adat — seperti pinjaman, penerimaan, atau
-          penyerahan hewan — selalu melibatkan dua Clan: pihak yang memberi
+          penyerahan hewan — selalu melibatkan dua Rumpun: pihak yang memberi
           dan pihak yang menerima.
         </p>
         <div className="bg-muted rounded-lg p-4 space-y-2">
@@ -37,11 +37,11 @@ export function ElderStep2Clans({ onNext, onBack, isLoading }: ElderStep2ClansPr
           <p>
             Tongkonan A memberikan seekor kerbau kepada Tongkonan B sebagai
             bagian dari upacara Rambu Solo. Catatan ini tersimpan sebagai
-            transaksi antara dua Clan.
+            transaksi antara dua Rumpun Keluarga.
           </p>
         </div>
         <p>
-          Daftar Clan yang tersedia di aplikasi sudah disiapkan oleh admin
+          Daftar Rumpun Keluarga yang tersedia di aplikasi sudah disiapkan oleh admin
           komunitas Anda.
         </p>
       </div>

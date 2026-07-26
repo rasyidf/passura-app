@@ -11,11 +11,13 @@ import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { RelationshipInput } from "@/components/ui/relationship-input";
 import { Badge } from "@/components/ui/badge";
+import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { Receipt, Clan, AnimalType } from "@/db/types";
+import { MoneyCell } from "@/components/ui/money-cell";
 
 const OBLIGATION_BADGE: Record<string, { label: string; className: string }> = {
   ritual:   { label: "Ritual",      className: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -93,7 +95,7 @@ export default function ReceiptsScreen() {
   const animalMap = useMemo(() => Object.fromEntries(animalTypes.map((a) => [a.id, a.name])), [animalTypes]);
 
   const columns: ColumnDef<Receipt>[] = useMemo(() => [
-    { accessorKey: "dateReceived", header: "Tanggal", cell: ({ row }) => row.original.dateReceived?.slice(0, 10) || "-" },
+    { accessorKey: "dateReceived", header: "Tanggal", filterFn: "dateRange" as any, cell: ({ row }) => row.original.dateReceived?.slice(0, 10) || "-" },
     {
       accessorKey: "receiver",
       header: "Penerima",
@@ -131,8 +133,8 @@ export default function ReceiptsScreen() {
     },
     {
       accessorKey: "calculatedValue",
-      header: "Nilai (Rp)",
-      cell: ({ row }) => `Rp ${(row.original.calculatedValue || 0).toLocaleString("id-ID")}`,
+      header: "Nilai",
+      cell: ({ row }) => <MoneyCell value={row.original.calculatedValue} />,
     },
     {
       accessorKey: "settlementStatus",
@@ -145,6 +147,7 @@ export default function ReceiptsScreen() {
   ], [clanMap, animalMap]);
 
   const filters = useMemo(() => [
+    { id: "dateReceived", label: "Tanggal", type: "daterange" as const },
     { id: "obligationType", label: "Jenis", type: "select" as const, options: OBLIGATION_TYPES },
     { id: "settlementStatus", label: "Status", type: "segmented" as const, options: [
       { value: "pending", label: "Pending" }, { value: "partial", label: "Sebagian" }, { value: "settled", label: "Lunas" },
@@ -163,9 +166,9 @@ export default function ReceiptsScreen() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Penerimaan</h1>
-          <p className="text-sm text-muted-foreground">Catatan penerimaan donasi dari clan lain.</p>
+          <p className="text-sm text-muted-foreground">Catatan penerimaan donasi dari rumpun keluarga lain.</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="gap-2"><Plus className="size-4" /> Catat Penerimaan</Button>
+        <Button onClick={() => setShowCreate(true)} size="lg" className="gap-2"><Plus className="size-4" /> Catat Penerimaan</Button>
       </div>
 
       <DataTable
@@ -255,9 +258,9 @@ function ReceiptFormDialog({ open, onOpenChange, title, clans, animalTypes, defa
                       options={clanOptions}
                       value={field.value}
                       onChange={field.onChange}
-                      placeholder="Pilih clan..."
-                      searchPlaceholder="Cari clan..."
-                      emptyMessage="Clan tidak ditemukan."
+                      placeholder="Pilih rumpun..."
+                      searchPlaceholder="Cari rumpun..."
+                      emptyMessage="Rumpun tidak ditemukan."
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -326,7 +329,11 @@ function ReceiptFormDialog({ open, onOpenChange, title, clans, animalTypes, defa
             <Controller control={control} name="dateReceived" rules={{ required: "Wajib" }} render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor={field.name}>Tanggal Diterima</FieldLabel>
-                <Input id={field.name} type="date" aria-invalid={fieldState.invalid} {...field} />
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  aria-invalid={fieldState.invalid}
+                />
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )} />

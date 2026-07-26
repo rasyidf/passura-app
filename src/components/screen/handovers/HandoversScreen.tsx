@@ -11,11 +11,13 @@ import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { RelationshipInput } from "@/components/ui/relationship-input";
 import { Badge } from "@/components/ui/badge";
+import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { Handover, Clan, AnimalType } from "@/db/types";
+import { MoneyCell } from "@/components/ui/money-cell";
 
 const OBLIGATION_BADGE: Record<string, { label: string; className: string }> = {
   ritual:   { label: "Ritual",      className: "bg-amber-100 text-amber-700 border-amber-200" },
@@ -89,7 +91,7 @@ export default function HandoversScreen() {
   const animalMap = useMemo(() => Object.fromEntries(animalTypes.map((a) => [a.id, a.name])), [animalTypes]);
 
   const columns: ColumnDef<Handover>[] = useMemo(() => [
-    { accessorKey: "date", header: "Tanggal", cell: ({ row }) => row.original.date?.slice(0, 10) || "-" },
+    { accessorKey: "date", header: "Tanggal", filterFn: "dateRange" as any, cell: ({ row }) => row.original.date?.slice(0, 10) || "-" },
     {
       accessorKey: "fromClan",
       header: "Dari",
@@ -127,12 +129,13 @@ export default function HandoversScreen() {
     },
     {
       accessorKey: "calculatedValue",
-      header: "Nilai (Rp)",
-      cell: ({ row }) => `Rp ${(row.original.calculatedValue || 0).toLocaleString("id-ID")}`,
+      header: "Nilai",
+      cell: ({ row }) => <MoneyCell value={row.original.calculatedValue} />,
     },
   ], [clanMap, animalMap]);
 
   const filters = useMemo(() => [
+    { id: "date", label: "Tanggal", type: "daterange" as const },
     { id: "obligationType", label: "Jenis", type: "select" as const, options: OBLIGATION_TYPES },
   ], []);
 
@@ -148,9 +151,9 @@ export default function HandoversScreen() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Penyerahan</h1>
-          <p className="text-sm text-muted-foreground">Catatan penyerahan donasi ke clan lain.</p>
+          <p className="text-sm text-muted-foreground">Catatan penyerahan donasi ke rumpun keluarga lain.</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="gap-2"><Plus className="size-4" /> Catat Penyerahan</Button>
+        <Button onClick={() => setShowCreate(true)} size="lg" className="gap-2"><Plus className="size-4" /> Catat Penyerahan</Button>
       </div>
 
       <DataTable
@@ -235,14 +238,14 @@ function HandoverFormDialog({ open, onOpenChange, title, clans, animalTypes, def
               {(["fromClan", "toClan"] as const).map((key) => (
                 <Controller key={key} control={control} name={key} rules={{ required: "Wajib" }} render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel>{key === "fromClan" ? "Dari Clan" : "Ke Clan"}</FieldLabel>
+                    <FieldLabel>{key === "fromClan" ? "Dari Rumpun" : "Ke Rumpun"}</FieldLabel>
                     <RelationshipInput
                       options={clanOptions}
                       value={field.value}
                       onChange={field.onChange}
-                      placeholder="Pilih clan..."
-                      searchPlaceholder="Cari clan..."
-                      emptyMessage="Clan tidak ditemukan."
+                      placeholder="Pilih rumpun..."
+                      searchPlaceholder="Cari rumpun..."
+                      emptyMessage="Rumpun tidak ditemukan."
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -311,7 +314,11 @@ function HandoverFormDialog({ open, onOpenChange, title, clans, animalTypes, def
             <Controller control={control} name="date" rules={{ required: "Wajib" }} render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor={field.name}>Tanggal</FieldLabel>
-                <Input id={field.name} type="date" aria-invalid={fieldState.invalid} {...field} />
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  aria-invalid={fieldState.invalid}
+                />
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )} />

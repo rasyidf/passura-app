@@ -5,6 +5,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Button } from "./button";
 import { Input } from "./input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
+import { DateRangePicker, type DateRangeValue } from "./date-range-picker";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "./command";
+import { Popover, PopoverContent, PopoverTrigger } from "./popover";
+import { Check, ChevronDown } from "lucide-react";
 import {
     ArrowUpDown,
     ArrowUp,
@@ -16,11 +27,12 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
-    Loader2
+    Loader2,
 } from "lucide-react";
 import {
     ColumnDef,
     ColumnFiltersState,
+    FilterFn,
     SortingState,
     VisibilityState,
     flexRender,
@@ -32,14 +44,44 @@ import {
     PaginationState,
 } from "@tanstack/react-table";
 
+/** The value stored for a daterange filter column. */
+// Re-exported from date-range-picker for consumers that import from data-table
+export type { DateRangeValue } from "./date-range-picker";
+
+/**
+ * TanStack Table filterFn that compares a cell's "yyyy-MM-dd" string value
+ * against a { from, to } range. Empty bounds are treated as open-ended.
+ */
+const dateRangeFilterFn: FilterFn<any> = (row, columnId, filterValue: DateRangeValue) => {
+    const cell = row.getValue<string>(columnId);
+    if (!cell) return false;
+    const date = cell.slice(0, 10); // normalise to "yyyy-MM-dd"
+    if (filterValue.from && date < filterValue.from) return false;
+    if (filterValue.to && date > filterValue.to) return false;
+    return true;
+};
+dateRangeFilterFn.autoRemove = (val: DateRangeValue | undefined) =>
+    !val || (!val.from && !val.to);
+
+/**
+ * TanStack Table filterFn for multiselect — passes if the cell value is in
+ * the selected set. Empty array = no filter.
+ */
+const multiSelectFilterFn: FilterFn<any> = (row, columnId, filterValue: string[]) => {
+    if (!filterValue || filterValue.length === 0) return true;
+    const cell = row.getValue<string>(columnId);
+    return filterValue.includes(cell);
+};
+multiSelectFilterFn.autoRemove = (val: string[] | undefined) => !val || val.length === 0;
+
 /**
  * Filter configuration for DataTable columns
  */
 export interface DataTableFilterOption {
     id: string; // column accessorKey
     label: string; // UI label
-    type: "select" | "segmented" | "text";
-    options?: { value: string; label: string }[]; // for select/segmented
+    type: "select" | "segmented" | "text" | "daterange" | "multiselect";
+    options?: { value: string; label: string }[]; // for select/segmented/multiselect
     placeholder?: string;
 }
 
@@ -204,6 +246,10 @@ export function DataTable<T extends { id?: string | number }>({
     const table = useReactTable({
         data,
         columns: finalColumns,
+        filterFns: {
+            dateRange: dateRangeFilterFn,
+            multiSelect: multiSelectFilterFn,
+        },
         state: {
             sorting,
             globalFilter,
@@ -279,14 +325,21 @@ export function DataTable<T extends { id?: string | number }>({
                     if (!column) return null;
 
                     if (filter.type === "select" && filter.options) {
+                        const activeValue = String(column.getFilterValue() ?? "");
+                        const activeOption = filter.options.find((o) => o.value === activeValue);
+                        const displayLabel = activeOption
+                            ? activeOption.label
+                            : (filter.placeholder || `Semua ${filter.label}`);
                         return (
                             <Select
                                 key={filter.id}
-                                value={String(column.getFilterValue() ?? "")}
+                                value={activeValue}
                                 onValueChange={(v) => column.setFilterValue(v === "__all__" ? undefined : v)}
                             >
-                                <SelectTrigger className="h-9 w-auto min-w-[140px]">
-                                    <SelectValue placeholder={filter.placeholder || `Semua ${filter.label}`} />
+                                <SelectTrigger className="w-auto min-w-[140px]">
+                                    <SelectValue placeholder={filter.placeholder || `Semua ${filter.label}`}>
+                                        {displayLabel}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="__all__">{filter.placeholder || `Semua ${filter.label}`}</SelectItem>
@@ -349,20 +402,35 @@ export function DataTable<T extends { id?: string | number }>({
                         );
                     }
 
+                    if (filter.type === "daterange") {
+                        const range = (column.getFilterValue() as DateRangeValue | undefined) ?? { from: "", to: "" };
+                        return (
+                            <DateRangePicker
+                                key={filter.id}
+                                value={range}
+                                onChange={(v) => column.setFilterValue(v)}
+                                placeholder={filter.placeholder || `Filter ${filter.label}`}
+                            />
+                        );
+                    }
+
+                    if (filter.type === "multiselect" && filter.options) {
+                        return (
+                            <MultiSelectFilter
+                                key={filter.id}
+                                label={filter.label}
+                                placeholder={filter.placeholder}
+                                options={filter.options}
+                                value={(column.getFilterValue() as string[] | undefined) ?? []}
+                                onChange={(v) => column.setFilterValue(v.length ? v : undefined)}
+                            />
+                        );
+                    }
+
                     return null;
                 })}
 
-                {/* Record Count */}
-                <div className="ml-auto text-xs text-muted-foreground">
-                    {loading ? (
-                        <span className="flex items-center gap-1">
-                            <Loader2 className="size-3 animate-spin" />
-                            Memuat...
-                        </span>
-                    ) : (
-                        `${displayRowCount.toLocaleString()} record${displayRowCount !== 1 ? 's' : ''}`
-                    )}
-                </div>
+
             </div>
 
             {/* Table */}
@@ -464,8 +532,19 @@ export function DataTable<T extends { id?: string | number }>({
                     <span>
                         Halaman {pageIndex + 1} dari {pageCount}
                     </span>
+                  
                 </div>
-
+  {/* Record Count */}
+                    <div className="ml-auto text-xs text-muted-foreground">
+                        {loading ? (
+                            <span className="flex items-center gap-1">
+                                <Loader2 className="size-3 animate-spin" />
+                                Memuat...
+                            </span>
+                        ) : (
+                            `${displayRowCount.toLocaleString()} record${displayRowCount !== 1 ? 's' : ''}`
+                        )}
+                    </div>
                 <div className="flex items-center gap-2">
                     {/* Page Size Selector */}
                     <Select
@@ -534,6 +613,106 @@ export function DataTable<T extends { id?: string | number }>({
                 </div>
             </div>
         </div>
+    );
+}
+
+// ─── MultiSelect Filter ───────────────────────────────────────────────────────
+
+function MultiSelectFilter({
+    label,
+    placeholder,
+    options,
+    value,
+    onChange,
+}: {
+    label: string;
+    placeholder?: string;
+    options: { value: string; label: string }[];
+    value: string[];
+    onChange: (v: string[]) => void;
+}) {
+    const [open, setOpen] = React.useState(false);
+
+    function toggle(v: string) {
+        if (value.includes(v)) {
+            onChange(value.filter((x) => x !== v));
+        } else {
+            onChange([...value, v]);
+        }
+    }
+
+    const hasValue = value.length > 0;
+    const triggerLabel = hasValue
+        ? value.length === 1
+            ? options.find((o) => o.value === value[0])?.label ?? value[0]
+            : `${label}: ${value.length} dipilih`
+        : (placeholder ?? `Semua ${label}`);
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger
+                render={
+                    <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={open}
+                        className={cn(
+                            "h-8 gap-1.5 px-3 font-normal text-sm",
+                            hasValue ? "border-primary/60 bg-primary/5" : "text-muted-foreground"
+                        )}
+                    />
+                }
+            >
+                <span className="truncate max-w-[180px]">{triggerLabel}</span>
+                <ChevronDown className="size-3.5 shrink-0 opacity-50" />
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-0" align="start" side="bottom">
+                <Command>
+                    <CommandInput placeholder={`Cari ${label.toLowerCase()}...`} />
+                    <CommandList>
+                        <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                        <CommandGroup>
+                            {options.map((option) => {
+                                const isSelected = value.includes(option.value);
+                                return (
+                                    <CommandItem
+                                        key={option.value}
+                                        value={option.label}
+                                        onSelect={() => toggle(option.value)}
+                                        data-checked={isSelected}
+                                    >
+                                        <div className={cn(
+                                            "mr-2 flex size-4 shrink-0 items-center justify-center rounded border",
+                                            isSelected
+                                                ? "border-primary bg-primary text-primary-foreground"
+                                                : "border-muted-foreground/40"
+                                        )}>
+                                            {isSelected && <Check className="size-3" />}
+                                        </div>
+                                        <span className="truncate">{option.label}</span>
+                                    </CommandItem>
+                                );
+                            })}
+                        </CommandGroup>
+                        {hasValue && (
+                            <>
+                                <div className="h-px bg-border mx-1" />
+                                <CommandGroup>
+                                    <CommandItem
+                                        value="__clear__"
+                                        onSelect={() => { onChange([]); setOpen(false); }}
+                                        className="text-muted-foreground text-xs justify-center"
+                                    >
+                                        Hapus pilihan
+                                    </CommandItem>
+                                </CommandGroup>
+                            </>
+                        )}
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
     );
 }
 

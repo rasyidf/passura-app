@@ -35,20 +35,20 @@ export default function ParticipantsScreen() {
   const [editItem, setEditItem] = useState<Participant | null>(null);
   const [deleteItem, setDeleteItem] = useState<Participant | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [filterClan, setFilterClan] = useState("");
 
   const clans = clansData?.docs ?? [];
   const rows = data?.docs ?? [];
 
   const clanMap = useMemo(() => Object.fromEntries(clans.map((c) => [c.id, c.name])), [clans]);
 
-  const filteredRows = filterClan ? rows.filter((r) => r.clan === filterClan) : rows;
+  const filteredRows = rows; // filtering handled by DataTable
 
   const columns: ColumnDef<Participant>[] = useMemo(() => [
     { accessorKey: "name", header: "Nama", cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
     {
       accessorKey: "clan",
-      header: "Clan",
+      header: "Rumpun",
+      filterFn: "multiSelect" as any,
       cell: ({ row }) => {
         const name = clanMap[row.original.clan] ?? row.original.clan;
         return (
@@ -78,30 +78,18 @@ export default function ParticipantsScreen() {
     value: c.id, label: c.name, description: c.region,
   })), [clans]);
 
+  const clanFilterOptions = useMemo(() => clans.map((c) => ({
+    value: c.id, label: c.name,
+  })), [clans]);
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-xl font-semibold">Silsilah / Peserta</h1>
-          <p className="text-sm text-muted-foreground">Catatan peserta dan garis keturunan per clan.</p>
+          <p className="text-sm text-muted-foreground">Catatan peserta dan garis keturunan per rumpun keluarga.</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="gap-2"><Plus className="size-4" /> Tambah Peserta</Button>
-      </div>
-
-      {/* Clan filter */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <label className="text-sm font-medium shrink-0">Filter Clan:</label>
-        <div className="w-64">
-          <RelationshipInput
-            options={clanOptions}
-            value={filterClan}
-            onChange={setFilterClan}
-            placeholder="Semua Clan"
-            searchPlaceholder="Cari clan..."
-            emptyMessage="Clan tidak ditemukan."
-            clearable
-          />
-        </div>
+        <Button onClick={() => setShowCreate(true)} size="lg" className="gap-2"><Plus className="size-4" /> Tambah Peserta</Button>
       </div>
 
       <DataTable
@@ -109,6 +97,7 @@ export default function ParticipantsScreen() {
         columns={columns}
         searchableColumnIds={["name", "role"]}
         searchPlaceholder="Cari peserta..."
+        filters={[{ id: "clan", label: "Rumpun", type: "multiselect", options: clanFilterOptions, placeholder: "Semua Rumpun" }]}
         loading={isLoading}
         onEdit={(row) => setEditItem(row)}
         onDelete={(row) => setDeleteItem(row)}
@@ -177,14 +166,14 @@ function ParticipantFormDialog({ open, onOpenChange, title, clanOptions, default
             )} />
             <Controller control={control} name="clan" rules={{ required: "Wajib" }} render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel>Clan</FieldLabel>
+                <FieldLabel>Rumpun</FieldLabel>
                 <RelationshipInput
                   options={clanOptions}
                   value={field.value}
                   onChange={field.onChange}
-                  placeholder="Pilih clan..."
-                  searchPlaceholder="Cari clan..."
-                  emptyMessage="Clan tidak ditemukan."
+                  placeholder="Pilih rumpun..."
+                  searchPlaceholder="Cari rumpun..."
+                  emptyMessage="Rumpun tidak ditemukan."
                 />
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>

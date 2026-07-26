@@ -163,7 +163,7 @@ describe('ParticipantStep2Clan', () => {
   // When no clans exist, show skip message and no clan picker.
 
   describe('no-clans case (Requirement 4.4)', () => {
-    it('shows "Belum ada clan yang terdaftar. Hubungi admin Anda." when no clans', () => {
+    it('shows "Belum ada rumpun keluarga yang terdaftar. Hubungi admin Anda." when no clans', () => {
       mockClans = [] // explicitly empty
 
       render(
@@ -175,7 +175,7 @@ describe('ParticipantStep2Clan', () => {
       )
 
       expect(
-        screen.getByText('Belum ada clan yang terdaftar. Hubungi admin Anda.'),
+        screen.getByText('Belum ada rumpun keluarga yang terdaftar. Hubungi admin Anda.'),
       ).toBeInTheDocument()
     })
 
@@ -252,7 +252,7 @@ describe('ParticipantStep2Clan', () => {
       )
 
       expect(
-        screen.queryByText('Belum ada clan yang terdaftar. Hubungi admin Anda.'),
+        screen.queryByText('Belum ada rumpun keluarga yang terdaftar. Hubungi admin Anda.'),
       ).not.toBeInTheDocument()
     })
   })
@@ -371,8 +371,8 @@ describe('ParticipantOnboardingWizard — clan selection updates elder record', 
       />,
     )
 
-    // We should be on step 2 — "Pilih Clan Anda"
-    expect(screen.getByRole('heading', { name: 'Pilih Clan Anda' })).toBeInTheDocument()
+    // We should be on step 2 — "Pilih Rumpun Keluarga Anda"
+    expect(screen.getByRole('heading', { name: 'Pilih Rumpun Keluarga Anda' })).toBeInTheDocument()
 
     // The ClanPicker renders clan options as role="option" items
     const clanOption = screen.getByRole('option', { name: 'Clan Toraja' })

@@ -48,7 +48,7 @@ export function HandoverStep2FromClan({ draft, onNext, onBack, isLoading }: Hand
       <StepCard
         stepIndex={1}
         totalSteps={10}
-        title="Pilih Clan Asal"
+        title="Pilih Rumpun Asal"
         isLoading={true}
       >
         <p className="text-lg text-muted-foreground">Memuat…</p>
@@ -61,11 +61,11 @@ export function HandoverStep2FromClan({ draft, onNext, onBack, isLoading }: Hand
       <StepCard
         stepIndex={1}
         totalSteps={10}
-        title="Pilih Clan Asal"
+        title="Pilih Rumpun Asal"
         onBack={onBack}
         isLoading={isLoading}
       >
-        <KioskErrorBanner message="Belum ada clan yang terdaftar. Hubungi admin Anda." />
+        <KioskErrorBanner message="Belum ada rumpun keluarga yang terdaftar. Hubungi admin Anda." />
       </StepCard>
     )
   }
@@ -74,7 +74,7 @@ export function HandoverStep2FromClan({ draft, onNext, onBack, isLoading }: Hand
     <StepCard
       stepIndex={1}
       totalSteps={10}
-      title="Pilih Clan Asal"
+      title="Pilih Rumpun Asal"
       onNext={handleNext}
       onBack={onBack}
       nextDisabled={!selectedId}

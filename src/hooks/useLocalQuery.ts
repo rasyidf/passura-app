@@ -47,6 +47,7 @@ export function useLocalQuery<T extends BaseEntity = BaseEntity>(
         : await repo.getAll();
       return { docs: docs as T[], totalDocs: docs.length };
     },
+    staleTime: 1000 * 30, // 30 s — avoids re-fetching on every navigation
   });
 }
 

@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/auth/session'
 import { useOnboardingState } from '@/onboarding/useOnboardingState'
 import { shouldShowWizard } from '@/onboarding/onboarding-state'
@@ -9,19 +8,6 @@ import { ElderOnboardingWizard } from '@/onboarding/wizards/ElderOnboardingWizar
 import { AdminSetupWizard } from '@/onboarding/wizards/AdminSetupWizard'
 import { ParticipantOnboardingWizard } from '@/onboarding/wizards/ParticipantOnboardingWizard'
 import type { Elder } from '@/db/types'
-
-// ─── Loading Screen ───────────────────────────────────────────────────────────
-
-/**
- * Shown while onboarding state is being read from IndexedDB.
- */
-function LoadingScreen() {
-  return (
-    <div className="flex h-screen w-full items-center justify-center">
-      <Loader2 className="size-8 animate-spin text-muted-foreground" />
-    </div>
-  )
-}
 
 // ─── Role → Wizard Mapping ────────────────────────────────────────────────────
 
@@ -81,7 +67,7 @@ interface OnboardingGuardProps {
  * Validates: Requirements 1.3, 1.4, 1.5, 2.1, 3.1, 4.1
  */
 export function OnboardingGuard({ children }: OnboardingGuardProps) {
-  const { elder } = useAuth()
+  const { elder, isLoading: authLoading } = useAuth()
   const { state, isLoading, incrementSessionCount } = useOnboardingState(
     elder?.id ?? '',
   )
@@ -95,12 +81,12 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elder?.id])
 
-  if (isLoading) {
-    return <LoadingScreen />
-  }
-
-  const WizardComponent = shouldShowWizard(state)
-    ? getWizardForRole(elder?.role)
+  // Don't show the wizard until auth AND onboarding state have both resolved.
+  // Without this guard, elder?.id is '' on first render, which causes
+  // useOnboardingState to write a default state with userId:'', corrupting
+  // the record before the real elder ID is known.
+  const WizardComponent = !authLoading && !isLoading && elder && shouldShowWizard(state)
+    ? getWizardForRole(elder.role)
     : null
 
   return (

@@ -21,7 +21,7 @@ interface HandoverStep3ToClanProps {
  */
 export function validateSameParty(idA: string | null, idB: string | null): string {
   if (idA && idB && idA === idB) {
-    return 'Clan asal dan tujuan tidak boleh sama.'
+    return 'Rumpun asal dan tujuan tidak boleh sama.'
   }
   return ''
 }
@@ -65,7 +65,7 @@ export function HandoverStep3ToClan({ draft, onNext, onBack, isLoading }: Handov
       <StepCard
         stepIndex={2}
         totalSteps={10}
-        title="Pilih Clan Tujuan"
+        title="Pilih Rumpun Tujuan"
         isLoading={true}
       >
         <p className="text-lg text-muted-foreground">Memuat…</p>
@@ -77,7 +77,7 @@ export function HandoverStep3ToClan({ draft, onNext, onBack, isLoading }: Handov
     <StepCard
       stepIndex={2}
       totalSteps={10}
-      title="Pilih Clan Tujuan"
+      title="Pilih Rumpun Tujuan"
       onNext={handleNext}
       onBack={onBack}
       nextDisabled={!selectedId || !!validationError}

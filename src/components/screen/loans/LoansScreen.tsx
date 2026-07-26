@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { Banknote, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { Loan, Clan, AnimalType, Repayment } from "@/db/types";
+import { MoneyCell } from "@/components/ui/money-cell";
+import { DatePicker } from "@/components/ui/date-picker";
 
 function ClanLink({ id, name }: { id: string; name: string }) {
   return (
@@ -65,14 +67,13 @@ export default function LoansScreen() {
     },
     {
       accessorKey: "calculatedPrincipalValue", header: "Pokok",
-      cell: ({ row }) => <span className="font-mono text-sm">Rp {(row.original.calculatedPrincipalValue || 0).toLocaleString("id-ID")}</span>,
+      cell: ({ row }) => <MoneyCell value={row.original.calculatedPrincipalValue} />,
     },
     {
       accessorKey: "remainingValue", header: "Sisa",
-      cell: ({ row }) => {
-        const remaining = row.original.remainingValue || 0;
-        return <span className={`font-mono text-sm font-medium ${remaining <= 0 ? "text-green-600" : "text-primary"}`}>Rp {remaining.toLocaleString("id-ID")}</span>;
-      },
+      cell: ({ row }) => (
+        <MoneyCell value={row.original.remainingValue} highlightBalance />
+      ),
     },
     {
       accessorKey: "status", header: "Status",
@@ -158,6 +159,7 @@ function QuickRepaymentDialog({ loan, animalTypes, onClose, onSuccess }: {
   const [moneyAmount, setMoneyAmount] = useState("");
   const [animalType, setAnimalType] = useState("");
   const [quantity, setQuantity] = useState("1");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
 
   if (!loan) return null;
@@ -169,12 +171,12 @@ function QuickRepaymentDialog({ loan, animalTypes, onClose, onSuccess }: {
       const repayment: Repayment = {
         id: crypto.randomUUID(),
         repaymentType: repaymentType as "animal" | "money",
-        date: new Date().toISOString().slice(0, 10),
+        date: date || new Date().toISOString().slice(0, 10),
         witnesses: [],
         ...(repaymentType === "money" ? { moneyAmount: Number(moneyAmount) || 0 } : { animalType, quantity: Number(quantity) || 1 }),
       };
       await onSuccess(repayment);
-      setMoneyAmount(""); setAnimalType(""); setQuantity("1");
+      setMoneyAmount(""); setAnimalType(""); setQuantity("1"); setDate(new Date().toISOString().slice(0, 10));
     } catch {
       toast.error("Gagal menambah pembayaran");
     } finally {
@@ -220,6 +222,10 @@ function QuickRepaymentDialog({ loan, animalTypes, onClose, onSuccess }: {
               </div>
             </div>
           )}
+          <div className="space-y-2">
+            <Label>Tanggal Pembayaran</Label>
+            <DatePicker value={date} onChange={setDate} />
+          </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
             <Button type="submit" disabled={loading}>{loading ? "Menyimpan..." : "Catat Pembayaran"}</Button>

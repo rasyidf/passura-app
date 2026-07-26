@@ -49,7 +49,7 @@ export function ParticipantStep4Complete({
           <ul className="list-disc pl-6 space-y-2 text-foreground">
             <li>
               <strong>Lihat kewajiban</strong> — pantau pinjaman, penerimaan,
-              dan penyerahan yang berkaitan dengan Clan Anda.
+              dan penyerahan yang berkaitan dengan Rumpun Keluarga Anda.
             </li>
             <li>
               <strong>Riwayat transaksi</strong> — telusuri catatan adat

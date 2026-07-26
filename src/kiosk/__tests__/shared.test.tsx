@@ -44,7 +44,7 @@ describe('ClanPicker', () => {
   describe('rendering', () => {
     it('renders a listbox with accessible label', () => {
       render(<ClanPicker clans={CLANS} selectedId={null} onSelect={vi.fn()} />)
-      expect(screen.getByRole('listbox', { name: 'Pilih Clan' })).toBeInTheDocument()
+      expect(screen.getByRole('listbox', { name: 'Pilih Rumpun Keluarga' })).toBeInTheDocument()
     })
 
     it('renders one option per clan when no excludeId is set', () => {

@@ -58,7 +58,7 @@ function makeDraft(overrides: Partial<HandoverKioskDraft> = {}): HandoverKioskDr
 
 // ─── Task 13.3a — Same-clan error (Requirement 8.4) ──────────────────────────
 describe('HandoverStep3ToClan — same-clan validation (Req 8.4)', () => {
-  it('shows "Clan asal dan tujuan tidak boleh sama." when toClan equals fromClan', async () => {
+  it('shows "Rumpun asal dan tujuan tidak boleh sama." when toClan equals fromClan', async () => {
     const draft = makeDraft({ fromClanId: 'clan-a', toClanId: 'clan-a' })
     render(
       <HandoverStep3ToClan
@@ -74,7 +74,7 @@ describe('HandoverStep3ToClan — same-clan validation (Req 8.4)', () => {
     // The error message should be visible once selectedId === fromClanId
     // In initial render toClanId = 'clan-a' === fromClanId → error fires immediately
     expect(screen.getByRole('alert')).toBeInTheDocument()
-    expect(screen.getByText('Clan asal dan tujuan tidak boleh sama.')).toBeInTheDocument()
+    expect(screen.getByText('Rumpun asal dan tujuan tidak boleh sama.')).toBeInTheDocument()
   })
 
   it('blocks the "Lanjut" button when same-clan error is present', async () => {

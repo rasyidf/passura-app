@@ -10,11 +10,13 @@ import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { RelationshipInput } from "@/components/ui/relationship-input";
 import { Badge } from "@/components/ui/badge";
+import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { Obligation, Clan, AnimalType } from "@/db/types";
+import { MoneyCell } from "@/components/ui/money-cell";
 
 const ASSET_BADGE: Record<string, { label: string; className: string }> = {
   money:  { label: "Uang",  className: "bg-green-100 text-green-700 border-green-200" },
@@ -73,7 +75,7 @@ export default function ObligationsScreen() {
 
   const columns: ColumnDef<Obligation>[] = useMemo(() => [
     { accessorKey: "event", header: "Acara" },
-    { accessorKey: "date", header: "Tanggal", cell: ({ row }) => row.original.date?.slice(0, 10) || "-" },
+    { accessorKey: "date", header: "Tanggal", filterFn: "dateRange" as any, cell: ({ row }) => row.original.date?.slice(0, 10) || "-" },
     {
       accessorKey: "giver",
       header: "Pemberi",
@@ -103,8 +105,8 @@ export default function ObligationsScreen() {
     },
     {
       accessorKey: "calculatedValue",
-      header: "Nilai (Rp)",
-      cell: ({ row }) => `Rp ${(row.original.calculatedValue || 0).toLocaleString("id-ID")}`,
+      header: "Nilai",
+      cell: ({ row }) => <MoneyCell value={row.original.calculatedValue} />,
     },
   ], [clanMap, animalMap]);
 
@@ -120,14 +122,16 @@ export default function ObligationsScreen() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-xl font-semibold">Kewajiban</h1>
-          <p className="text-sm text-muted-foreground">Catatan kewajiban adat antar clan.</p>
+          <p className="text-sm text-muted-foreground">Catatan kewajiban adat antar rumpun keluarga.</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="gap-2"><Plus className="size-4" /> Catat Kewajiban</Button>
+        <Button onClick={() => setShowCreate(true)} size="lg" className="gap-2"><Plus className="size-4" /> Catat Kewajiban</Button>
       </div>
 
       <DataTable
         data={rows} columns={columns} searchableColumnIds={["event"]}
-        searchPlaceholder="Cari kewajiban..." loading={isLoading}
+        searchPlaceholder="Cari kewajiban..."
+        filters={[{ id: "date", label: "Tanggal", type: "daterange" as const }]}
+        loading={isLoading}
         onEdit={(r) => setEditItem(r)} onDelete={(r) => setDeleteItem(r)}
         emptyMessage="Belum ada data kewajiban."
       />
@@ -218,9 +222,9 @@ function ObligationFormDialog({ open, onOpenChange, title, clans, animalTypes, d
                       options={clanOptions}
                       value={field.value}
                       onChange={field.onChange}
-                      placeholder="Pilih clan..."
-                      searchPlaceholder="Cari clan..."
-                      emptyMessage="Clan tidak ditemukan."
+                      placeholder="Pilih rumpun..."
+                      searchPlaceholder="Cari rumpun..."
+                      emptyMessage="Rumpun tidak ditemukan."
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -278,7 +282,11 @@ function ObligationFormDialog({ open, onOpenChange, title, clans, animalTypes, d
             <Controller control={control} name="date" rules={{ required: "Wajib" }} render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor={field.name}>Tanggal</FieldLabel>
-                <Input id={field.name} type="date" aria-invalid={fieldState.invalid} {...field} />
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  aria-invalid={fieldState.invalid}
+                />
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
             )} />

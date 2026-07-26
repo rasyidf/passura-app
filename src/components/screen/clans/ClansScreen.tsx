@@ -5,41 +5,41 @@ import { useForm, Controller } from "react-hook-form";
 import DataTable from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus, Users, Network, Crown, User } from "lucide-react";
+import { Plus, Users, Network } from "lucide-react";
 import type { Clan, Participant } from "@/db/types";
 
-type FormValues = { name: string; region: string };
-
-const ROLE_META: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
-  head:     { label: "Kepala",  icon: <Crown className="size-3" />,   className: "bg-amber-100 text-amber-700 border-amber-200" },
-  member:   { label: "Anggota", icon: <User className="size-3" />,    className: "bg-sky-100 text-sky-700 border-sky-200" },
-  ancestor: { label: "Leluhur", icon: <Network className="size-3" />, className: "bg-purple-100 text-purple-700 border-purple-200" },
-};
+import { ClanFamilyTree } from "./ClanCard";
+import { FamilyGraphDialog } from "./FamilyGraph";
+import { ParticipantFormDialog } from "./ParticipantFormDialog";
+import { type ClanFormValues, type ParticipantFormValues } from "./types";
 
 export default function ClansScreen() {
   const { data, isLoading } = useLocalQuery<Clan>("clans");
-  const { data: participantsData } = useLocalQuery<Participant>("participants");
+  const { data: participantsData, refetch: refetchParticipants } = useLocalQuery<Participant>("participants");
   const createClan = useCreateDoc("clans");
   const updateClan = useUpdateDoc("clans");
   const deleteClan = useDeleteDoc("clans");
+  const createParticipant = useCreateDoc("participants");
+  const updateParticipant = useUpdateDoc("participants");
 
   const [editItem, setEditItem] = useState<Clan | null>(null);
   const [deleteItem, setDeleteItem] = useState<Clan | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [graphClan, setGraphClan] = useState<Clan | null>(null);
+  const [addMemberClan, setAddMemberClan] = useState<Clan | null>(null);
+  const [editParticipant, setEditParticipant] = useState<Participant | null>(null);
 
   const clans = data?.docs ?? [];
   const participants = participantsData?.docs ?? [];
 
-  // Group participants by clan
   const participantsByClan = useMemo(() => {
     const map: Record<string, Participant[]> = {};
     for (const p of participants) {
@@ -49,13 +49,16 @@ export default function ClansScreen() {
     return map;
   }, [participants]);
 
+  const participantById = useMemo(
+    () => Object.fromEntries(participants.map((p) => [p.id, p])),
+    [participants]
+  );
+
   const columns: ColumnDef<Clan>[] = useMemo(() => [
     {
       accessorKey: "name",
-      header: "Nama Clan",
-      cell: ({ row }) => (
-        <span className="font-medium">{row.original.name}</span>
-      ),
+      header: "Nama Rumpun",
+      cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
     },
     {
       accessorKey: "region",
@@ -71,8 +74,7 @@ export default function ClansScreen() {
         const count = participantsByClan[row.original.id]?.length ?? 0;
         return (
           <span className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Users className="size-3.5" />
-            {count}
+            <Users className="size-3.5" />{count}
           </span>
         );
       },
@@ -81,20 +83,28 @@ export default function ClansScreen() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-xl font-semibold">Clan / Rumpun Keluarga</h1>
-          <p className="text-sm text-muted-foreground">Kelola data clan dan lihat pohon keluarga.</p>
+          <h1 className="text-xl font-semibold">Rumpun Keluarga</h1>
+          <p className="text-sm text-muted-foreground">
+            Kelola data rumpun keluarga dan lihat pohon keluarga.
+          </p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="gap-2">
-          <Plus className="size-4" /> Tambah Clan
+        <Button onClick={() => setShowCreate(true)} size="lg" className="gap-2">
+          <Plus className="size-4" /> Tambah Rumpun
         </Button>
       </div>
 
+      {/* Tabs */}
       <Tabs defaultValue="list">
         <TabsList>
-          <TabsTrigger value="list" className="gap-2"><Users className="size-4" /> Daftar</TabsTrigger>
-          <TabsTrigger value="tree" className="gap-2"><Network className="size-4" /> Pohon Keluarga</TabsTrigger>
+          <TabsTrigger value="list" className="gap-2">
+            <Users className="size-4" /> Daftar
+          </TabsTrigger>
+          <TabsTrigger value="tree" className="gap-2">
+            <Network className="size-4" /> Pohon Keluarga
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="list" className="mt-4">
@@ -102,11 +112,11 @@ export default function ClansScreen() {
             data={clans}
             columns={columns}
             searchableColumnIds={["name", "region"]}
-            searchPlaceholder="Cari clan..."
+            searchPlaceholder="Cari rumpun..."
             loading={isLoading}
             onEdit={(row) => setEditItem(row)}
             onDelete={(row) => setDeleteItem(row)}
-            emptyMessage="Belum ada clan terdaftar."
+            emptyMessage="Belum ada rumpun keluarga terdaftar."
           />
         </TabsContent>
 
@@ -114,251 +124,159 @@ export default function ClansScreen() {
           <ClanFamilyTree
             clans={clans}
             participantsByClan={participantsByClan}
+            participantById={participantById}
             loading={isLoading}
+            onAddMember={(clan) => setAddMemberClan(clan)}
+            onEditClan={(clan) => setEditItem(clan)}
+            onEditParticipant={(p) => setEditParticipant(p)}
+            onShowGraph={(clan) => setGraphClan(clan)}
           />
         </TabsContent>
       </Tabs>
 
+      {/* ── Clan CRUD ── */}
       <ClanFormDialog
-        open={showCreate}
-        onOpenChange={setShowCreate}
-        title="Tambah Clan Baru"
-        onSubmit={async (values) => {
-          await createClan.mutateAsync(values);
-          toast.success("Clan berhasil ditambahkan");
+        open={showCreate} onOpenChange={setShowCreate} title="Tambah Rumpun Baru"
+        onSubmit={async (v) => {
+          await createClan.mutateAsync(v);
+          toast.success("Rumpun berhasil ditambahkan");
           setShowCreate(false);
         }}
         loading={createClan.isPending}
       />
 
       <ClanFormDialog
-        open={!!editItem}
-        onOpenChange={(open) => !open && setEditItem(null)}
-        title="Edit Clan"
-        defaultValues={editItem ? { name: editItem.name, region: editItem.region || "" } : undefined}
-        onSubmit={async (values) => {
+        open={!!editItem} onOpenChange={(o) => !o && setEditItem(null)} title="Edit Rumpun"
+        defaultValues={editItem ? { name: editItem.name, region: editItem.region ?? "" } : undefined}
+        onSubmit={async (v) => {
           if (!editItem) return;
-          await updateClan.mutateAsync({ id: editItem.id, data: values });
-          toast.success("Clan berhasil diperbarui");
+          await updateClan.mutateAsync({ id: editItem.id, data: v });
+          toast.success("Rumpun berhasil diperbarui");
           setEditItem(null);
         }}
         loading={updateClan.isPending}
       />
 
-      <Dialog open={!!deleteItem} onOpenChange={(open) => !open && setDeleteItem(null)}>
+      <Dialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Hapus Clan</DialogTitle>
+            <DialogTitle>Hapus Rumpun</DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin menghapus clan <strong>{deleteItem?.name}</strong>?
+              Apakah Anda yakin ingin menghapus rumpun <strong>{deleteItem?.name}</strong>?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteItem(null)}>Batal</Button>
-            <Button variant="destructive" disabled={deleteClan.isPending} onClick={async () => {
-              if (!deleteItem) return;
-              await deleteClan.mutateAsync(deleteItem.id);
-              toast.success("Clan berhasil dihapus");
-              setDeleteItem(null);
-            }}>
+            <Button
+              variant="destructive" disabled={deleteClan.isPending}
+              onClick={async () => {
+                if (!deleteItem) return;
+                await deleteClan.mutateAsync(deleteItem.id);
+                toast.success("Rumpun berhasil dihapus");
+                setDeleteItem(null);
+              }}
+            >
               {deleteClan.isPending ? "Menghapus..." : "Hapus"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
 
-// ─── Family Tree ──────────────────────────────────────────────────────────────
+      {/* ── Participant dialogs ── */}
+      <ParticipantFormDialog
+        open={!!addMemberClan} onOpenChange={(o) => !o && setAddMemberClan(null)}
+        title={`Tambah Anggota — ${addMemberClan?.name ?? ""}`}
+        clanId={addMemberClan?.id ?? ""} participants={participants}
+        onSubmit={async (v) => {
+          await createParticipant.mutateAsync(v);
+          toast.success("Anggota berhasil ditambahkan");
+          setAddMemberClan(null);
+          refetchParticipants();
+        }}
+        loading={createParticipant.isPending}
+      />
 
-function ClanFamilyTree({
-  clans,
-  participantsByClan,
-  loading,
-}: {
-  clans: Clan[];
-  participantsByClan: Record<string, Participant[]>;
-  loading: boolean;
-}) {
-  const [search, setSearch] = useState("");
+      <ParticipantFormDialog
+        open={!!editParticipant} onOpenChange={(o) => !o && setEditParticipant(null)}
+        title="Edit Anggota"
+        clanId={editParticipant?.clan ?? ""} participants={participants}
+        defaultValues={editParticipant ? {
+          name: editParticipant.name,
+          clan: editParticipant.clan,
+          role: editParticipant.role,
+          gender: editParticipant.gender ?? "",
+          passedAway: editParticipant.passedAway ?? false,
+          notes: editParticipant.notes ?? "",
+          relations: (editParticipant.relations ?? []).map((r) => ({
+            type: r.type, participantId: r.participantId, notes: r.notes ?? "",
+          })),
+        } : undefined}
+        onSubmit={async (v) => {
+          if (!editParticipant) return;
+          await updateParticipant.mutateAsync({ id: editParticipant.id, data: v });
+          toast.success("Anggota berhasil diperbarui");
+          setEditParticipant(null);
+          refetchParticipants();
+        }}
+        loading={updateParticipant.isPending}
+      />
 
-  const filtered = search
-    ? clans.filter(
-        (c) =>
-          c.name.toLowerCase().includes(search.toLowerCase()) ||
-          c.region?.toLowerCase().includes(search.toLowerCase())
-      )
-    : clans;
-
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="rounded-xl border p-4 space-y-3">
-            <div className="h-5 w-1/2 rounded bg-muted animate-pulse" />
-            <div className="h-3 w-1/3 rounded bg-muted animate-pulse" />
-            <div className="space-y-2 pt-2">
-              {Array.from({ length: 3 }).map((_, j) => (
-                <div key={j} className="h-8 rounded bg-muted animate-pulse" />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (clans.length === 0) {
-    return (
-      <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">
-        <Network className="size-10 mx-auto mb-3 opacity-30" />
-        <p>Belum ada clan terdaftar.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="relative w-full sm:w-72">
-        <Input
-          placeholder="Cari clan atau wilayah..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+      {/* ── Family graph ── */}
+      {graphClan && (
+        <FamilyGraphDialog
+          open={!!graphClan} onOpenChange={(o) => !o && setGraphClan(null)}
+          clan={graphClan}
+          participants={participantsByClan[graphClan.id] ?? []}
+          participantById={participantById}
         />
-      </div>
-
-      {filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4">Tidak ada clan yang cocok.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((clan) => (
-            <ClanCard
-              key={clan.id}
-              clan={clan}
-              participants={participantsByClan[clan.id] ?? []}
-            />
-          ))}
-        </div>
       )}
     </div>
   );
 }
 
-function ClanCard({ clan, participants }: { clan: Clan; participants: Participant[] }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const sorted = [...participants].sort((a, b) => {
-    const order = { head: 0, ancestor: 1, member: 2 };
-    return (order[a.role] ?? 3) - (order[b.role] ?? 3);
-  });
-
-  const visible = expanded ? sorted : sorted.slice(0, 5);
-  const hasMore = sorted.length > 5;
-
-  return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="border-b bg-muted/30 py-3 px-4 flex-row items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="font-semibold text-sm truncate">{clan.name}</h3>
-          {clan.region && (
-            <p className="text-xs text-muted-foreground mt-0.5">{clan.region}</p>
-          )}
-        </div>
-        <Badge variant="outline" className="shrink-0 text-xs">
-          <Users className="size-3 mr-1" />
-          {participants.length}
-        </Badge>
-      </CardHeader>
-
-      <CardContent className="p-3 space-y-1">
-        {sorted.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-3">
-            Belum ada anggota terdaftar
-          </p>
-        ) : (
-          <>
-            {visible.map((p, idx) => {
-              const meta = ROLE_META[p.role] ?? ROLE_META.member;
-              const isHead = p.role === "head";
-              return (
-                <div
-                  key={p.id}
-                  className={[
-                    "flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm",
-                    isHead ? "bg-amber-50 dark:bg-amber-950/20" : "hover:bg-muted/50",
-                    idx < visible.length - 1 ? "relative" : "",
-                  ].join(" ")}
-                >
-                  {!isHead && (
-                    <span className="ml-2 shrink-0 w-3 h-px bg-border" aria-hidden />
-                  )}
-                  <span className="shrink-0 size-5 rounded-full bg-muted border flex items-center justify-center">
-                    {meta.icon}
-                  </span>
-                  <span className={isHead ? "font-medium" : ""}>{p.name}</span>
-                  <Badge variant="outline" className={`ml-auto text-[10px] py-0 ${meta.className}`}>
-                    {meta.label}
-                  </Badge>
-                  {p.notes && (
-                    <span className="sr-only">{p.notes}</span>
-                  )}
-                </div>
-              );
-            })}
-
-            {hasMore && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-full text-xs text-primary"
-                onClick={() => setExpanded((e) => !e)}
-              >
-                {expanded
-                  ? "Tampilkan lebih sedikit"
-                  : `+${sorted.length - 5} anggota lagi`}
-              </Button>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Form ─────────────────────────────────────────────────────────────────────
+// ─── Clan Form Dialog ─────────────────────────────────────────────────────────
 
 function ClanFormDialog({ open, onOpenChange, title, defaultValues, onSubmit, loading }: {
-  open: boolean; onOpenChange: (o: boolean) => void; title: string;
-  defaultValues?: FormValues; onSubmit: (v: FormValues) => Promise<void>; loading: boolean;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  title: string;
+  defaultValues?: ClanFormValues;
+  onSubmit: (v: ClanFormValues) => Promise<void>;
+  loading: boolean;
 }) {
-  const defaults = defaultValues || { name: "", region: "" };
-  const { control, handleSubmit } = useForm<FormValues>({ defaultValues: defaults, values: defaults });
+  const defaults = defaultValues ?? { name: "", region: "" };
+  const { control, handleSubmit } = useForm<ClanFormValues>({ defaultValues: defaults, values: defaults });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Controller control={control} name="name" rules={{ required: "Nama wajib diisi" }} render={({ field, fieldState }) => (
+          <Controller
+            control={control} name="name" rules={{ required: "Nama wajib diisi" }}
+            render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={field.name}>Nama Clan</FieldLabel>
+                <FieldLabel htmlFor={field.name}>Nama Rumpun</FieldLabel>
                 <Input id={field.name} placeholder="Tongkonan Rante" aria-invalid={fieldState.invalid} {...field} />
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
-            )} />
-            <Controller control={control} name="region" render={({ field, fieldState }) => (
+            )}
+          />
+          <Controller
+            control={control} name="region"
+            render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor={field.name}>Wilayah</FieldLabel>
                 <Input id={field.name} placeholder="Rantepao, Makale, dll." aria-invalid={fieldState.invalid} {...field} />
                 {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
               </Field>
-            )} />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
-              <Button type="submit" disabled={loading}>{loading ? "Menyimpan..." : "Simpan"}</Button>
-            </DialogFooter>
-          </form>
+            )}
+          />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
+            <Button type="submit" disabled={loading}>{loading ? "Menyimpan..." : "Simpan"}</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

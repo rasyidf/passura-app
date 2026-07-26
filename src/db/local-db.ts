@@ -46,6 +46,22 @@ export class PassuraDb extends Dexie {
     this.version(2).stores({
       syncLog: "++id, entityType, entityId, action, syncStatus, [syncStatus+createdAt]",
     });
+
+    this.version(3).stores({
+      participants: "id, name, clan, father, mother, spouse, syncStatus",
+    });
+
+    // v4: remove legacy father/mother/spouse indexes, add gender
+    this.version(4).stores({
+      participants: "id, name, clan, gender, syncStatus",
+    }).upgrade(async (tx) => {
+      // Strip legacy fields from all existing participant records
+      const all = await tx.table("participants").toArray();
+      for (const p of all) {
+        const { father, mother, spouse, ...rest } = p as any;
+        await tx.table("participants").put(rest);
+      }
+    });
   }
 }
 

@@ -55,9 +55,9 @@ export function AdminStep6Complete({ onNext, onBack, isLoading }: AdminStep6Comp
             <h2 className="text-lg font-semibold">Ringkasan Pengaturan</h2>
             <dl className="space-y-3">
               <SummaryRow
-                label="Clan ditambahkan"
+                label="Rumpun ditambahkan"
                 value={summary.clanCount}
-                unit="clan"
+                unit="rumpun"
               />
               <SummaryRow
                 label="Jenis hewan ditambahkan"

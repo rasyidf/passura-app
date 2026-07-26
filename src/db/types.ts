@@ -31,7 +31,20 @@ export interface Participant extends BaseEntity {
   name: string;
   clan: string; // clan ID
   role: "head" | "member" | "ancestor";
+  gender?: "male" | "female" | "other";
+  passedAway?: boolean;
   next?: string; // next participant ID (linked list)
+  notes?: string;
+  relations?: ParticipantRelation[];
+}
+
+export type RelationshipType =
+  | "father" | "mother" | "spouse" | "child"
+  | "sibling" | "grandparent" | "uncle_aunt" | "cousin" | "other";
+
+export interface ParticipantRelation {
+  type: RelationshipType;
+  participantId: string;
   notes?: string;
 }
 

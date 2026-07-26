@@ -65,7 +65,7 @@ export function LoanStep2Lender({ draft, onNext, onBack, isLoading }: LoanStep2L
         onBack={onBack}
         isLoading={isLoading}
       >
-        <KioskErrorBanner message="Belum ada clan yang terdaftar. Hubungi admin Anda." />
+        <KioskErrorBanner message="Belum ada rumpun keluarga yang terdaftar. Hubungi admin Anda." />
       </StepCard>
     )
   }

@@ -17,7 +17,7 @@ export function ClanPicker({ clans, selectedId, onSelect, excludeId }: ClanPicke
   return (
     <div
       role="listbox"
-      aria-label="Pilih Clan"
+      aria-label="Pilih Rumpun Keluarga"
       className="flex flex-col gap-2"
     >
       {visibleClans.map((clan) => {

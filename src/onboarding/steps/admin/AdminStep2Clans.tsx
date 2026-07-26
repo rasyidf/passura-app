@@ -41,7 +41,7 @@ export function AdminStep2Clans({ onNext, onBack, isLoading }: AdminStep2ClansPr
       setName('')
       setRegion('')
     } catch {
-      setSaveError('Gagal menyimpan clan. Coba lagi.')
+      setSaveError('Gagal menyimpan rumpun. Coba lagi.')
     } finally {
       setIsSaving(false)
     }
@@ -49,7 +49,7 @@ export function AdminStep2Clans({ onNext, onBack, isLoading }: AdminStep2ClansPr
 
   function handleNext() {
     if (clans.length === 0) {
-      setNavError('Tambahkan minimal satu clan untuk melanjutkan.')
+      setNavError('Tambahkan minimal satu rumpun keluarga untuk melanjutkan.')
       return
     }
     setNavError(null)
@@ -60,7 +60,7 @@ export function AdminStep2Clans({ onNext, onBack, isLoading }: AdminStep2ClansPr
     <StepCard
       stepIndex={1}
       totalSteps={6}
-      title="Tambah Clan"
+      title="Tambah Rumpun Keluarga"
       onNext={handleNext}
       onBack={onBack}
       nextDisabled={false}
@@ -68,14 +68,14 @@ export function AdminStep2Clans({ onNext, onBack, isLoading }: AdminStep2ClansPr
     >
       <div className="space-y-6">
         <p className="text-lg">
-          Tambahkan setidaknya satu Clan (Tongkonan) untuk komunitas Anda.
+          Tambahkan setidaknya satu Rumpun Keluarga (Tongkonan) untuk komunitas Anda.
         </p>
 
         {/* Inline mini-form */}
         <div className="space-y-3 rounded-md border border-input p-4">
           <div className="space-y-1">
             <label htmlFor="clan-name" className="text-lg font-medium">
-              Nama Clan <span aria-hidden="true" className="text-destructive">*</span>
+              Nama Rumpun <span aria-hidden="true" className="text-destructive">*</span>
             </label>
             <input
               id="clan-name"
@@ -115,9 +115,9 @@ export function AdminStep2Clans({ onNext, onBack, isLoading }: AdminStep2ClansPr
         {clans.length > 0 && (
           <div className="space-y-2">
             <h2 className="text-lg font-semibold">
-              Clan tersimpan ({clans.length})
+              Rumpun tersimpan ({clans.length})
             </h2>
-            <ul className="space-y-2" aria-label="Daftar clan">
+            <ul className="space-y-2" aria-label="Daftar rumpun keluarga">
               {clans.map((clan) => (
                 <li
                   key={clan.id}

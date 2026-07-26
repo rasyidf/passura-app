@@ -97,7 +97,7 @@ function BannerContent({ elderId }: { elderId: string }) {
             aria-hidden="true"
           />
           <p className="text-[18px] font-medium text-orange-800 dark:text-orange-200 leading-snug">
-            Pengaturan tenant belum lengkap. Tambahkan clan, jenis hewan, dan
+            Pengaturan tenant belum lengkap. Tambahkan rumpun keluarga, jenis hewan, dan
             grup acara sebelum menggunakan aplikasi.
           </p>
         </div>

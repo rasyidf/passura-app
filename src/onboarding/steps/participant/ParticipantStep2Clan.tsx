@@ -38,7 +38,7 @@ export function ParticipantStep2Clan({
     <StepCard
       stepIndex={1}
       totalSteps={4}
-      title="Pilih Clan Anda"
+      title="Pilih Rumpun Keluarga Anda"
       onNext={onNext}
       onBack={onBack}
       // Require a selection when clans exist; allow skip when none exist
@@ -48,23 +48,23 @@ export function ParticipantStep2Clan({
     >
       <div className="space-y-4 text-lg">
         {isQueryLoading ? (
-          <p className="text-muted-foreground">Memuat daftar clan…</p>
+          <p className="text-muted-foreground">Memuat daftar rumpun…</p>
         ) : noClans ? (
-          /* Requirement 4.4 — no clans registered */
+          /* Requirement 4.4 — no rumpun registered */
           <div className="bg-muted rounded-lg p-4 space-y-3">
             <p className="font-semibold text-foreground">
-              Belum ada clan yang terdaftar. Hubungi admin Anda.
+              Belum ada rumpun keluarga yang terdaftar. Hubungi admin Anda.
             </p>
             <p className="text-muted-foreground">
               Anda dapat melewati langkah ini dan melanjutkan pengaturan
-              profil. Pilihan clan dapat diperbarui nanti oleh admin.
+              profil. Pilihan rumpun dapat diperbarui nanti oleh admin.
             </p>
           </div>
         ) : (
-          /* Clans exist — show picker */
+          /* Rumpun exist — show picker */
           <>
             <p>
-              Pilih Clan (Tongkonan) yang sesuai dengan keanggotaan adat Anda.
+              Pilih Rumpun Keluarga (Tongkonan) yang sesuai dengan keanggotaan adat Anda.
             </p>
             <ClanPicker
               clans={clans!}

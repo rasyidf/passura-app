@@ -35,8 +35,8 @@ export function ElderStep3Transactions({
           <div className="bg-muted rounded-lg p-4 space-y-1">
             <p className="font-semibold text-xl">Pinjaman</p>
             <p>
-              Catatan kewajiban antara dua Clan — misalnya, satu Clan
-              meminjamkan uang atau hewan kepada Clan lain dan akan
+              Catatan kewajiban antara dua Rumpun — misalnya, satu Rumpun
+              meminjamkan uang atau hewan kepada Rumpun lain dan akan
               dikembalikan di kemudian hari.
             </p>
           </div>
@@ -45,7 +45,7 @@ export function ElderStep3Transactions({
           <div className="bg-muted rounded-lg p-4 space-y-1">
             <p className="font-semibold text-xl">Penerimaan</p>
             <p>
-              Catatan donasi atau aset yang diterima oleh satu Clan dari Clan
+              Catatan donasi atau aset yang diterima oleh satu Rumpun dari Rumpun
               lain, biasanya sebagai bagian dari kewajiban adat dalam sebuah
               upacara.
             </p>
@@ -55,7 +55,7 @@ export function ElderStep3Transactions({
           <div className="bg-muted rounded-lg p-4 space-y-1">
             <p className="font-semibold text-xl">Penyerahan</p>
             <p>
-              Catatan penyerahan aset secara resmi dari satu Clan kepada Clan
+              Catatan penyerahan aset secara resmi dari satu Rumpun kepada Rumpun
               lain, menandai selesainya suatu kewajiban adat.
             </p>
           </div>

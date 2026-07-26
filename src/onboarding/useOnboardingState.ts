@@ -48,6 +48,9 @@ export function useOnboardingState(userId: string) {
    */
   const enqueueWrite = useCallback(
     (mutate: (current: OnboardingState) => OnboardingState): Promise<void> => {
+      // Don't write anything if we don't have a real user ID yet
+      if (!userId) return Promise.resolve();
+
       const next = writeQueue.current.then(async () => {
         // Read the freshest copy from IndexedDB to avoid lost-update races
         const record = await db.appConfig.get(ONBOARDING_KEY);

@@ -54,7 +54,7 @@ const navGroups: NavGroup[] = [
     label: "Komunitas",
     items: [
       { href: "/dashboard/groups", label: "Grup Acara", icon: <Users className="size-4" /> },
-      { href: "/dashboard/clans", label: "Clan", icon: <Landmark className="size-4" /> },
+      { href: "/dashboard/clans", label: "Rumpun Keluarga", icon: <Landmark className="size-4" /> },
       { href: "/dashboard/participants", label: "Silsilah", icon: <Network className="size-4" /> },
     ],
   },

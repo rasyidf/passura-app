@@ -47,7 +47,7 @@ export function ReceiptStep2Receiver({ draft, onNext, onBack, isLoading }: Recei
       <StepCard
         stepIndex={1}
         totalSteps={10}
-        title="Pilih Clan Penerima"
+        title="Pilih Rumpun Penerima"
         isLoading={true}
       >
         <p className="text-lg text-muted-foreground">Memuat…</p>
@@ -60,11 +60,11 @@ export function ReceiptStep2Receiver({ draft, onNext, onBack, isLoading }: Recei
       <StepCard
         stepIndex={1}
         totalSteps={10}
-        title="Pilih Clan Penerima"
+        title="Pilih Rumpun Penerima"
         onBack={onBack}
         isLoading={isLoading}
       >
-        <KioskErrorBanner message="Belum ada clan yang terdaftar. Hubungi admin Anda." />
+        <KioskErrorBanner message="Belum ada rumpun keluarga yang terdaftar. Hubungi admin Anda." />
       </StepCard>
     )
   }
@@ -73,7 +73,7 @@ export function ReceiptStep2Receiver({ draft, onNext, onBack, isLoading }: Recei
     <StepCard
       stepIndex={1}
       totalSteps={10}
-      title="Pilih Clan Penerima"
+      title="Pilih Rumpun Penerima"
       onNext={handleNext}
       onBack={onBack}
       nextDisabled={!selectedId}

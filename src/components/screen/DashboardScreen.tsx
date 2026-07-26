@@ -93,7 +93,7 @@ export function DashboardScreen() {
   const clans = clansData?.docs ?? [];
 
   const isLoading =
-    loansLoading || receiptsLoading || handoversLoading || groupsLoading || clansLoading;
+    loansLoading && receiptsLoading && handoversLoading && groupsLoading && clansLoading;
 
   const activeLoans = loans.filter((l) => l.status === "active" || l.status === "approved");
   const settledLoans = loans.filter((l) => l.status === "settled");
@@ -175,7 +175,7 @@ export function DashboardScreen() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard
             icon={<Landmark className="size-4" />}
-            label="Total Clan"
+            label="Total Rumpun"
             value={clans.length}
             sub={`${groups.length} grup acara`}
             accent="orange"

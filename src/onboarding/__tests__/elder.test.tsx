@@ -98,14 +98,14 @@ describe('ElderOnboardingWizard', () => {
       expect(screen.getByRole('heading', { name: 'Selamat Datang!' })).toBeInTheDocument()
     })
 
-    it('starts at Step 2 (Apa itu Clan?) when elder-welcome is completed', () => {
+    it('starts at Step 2 (Apa itu Rumpun Keluarga?) when elder-welcome is completed', () => {
       render(
         <ElderOnboardingWizard
           state={makeState(['elder-welcome'])}
           onComplete={noop}
         />,
       )
-      expect(screen.getByRole('heading', { name: 'Apa itu Clan?' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Apa itu Rumpun Keluarga?' })).toBeInTheDocument()
     })
 
     it('starts at Step 3 (Pencatatan Transaksi) when first two steps are completed', () => {
@@ -227,8 +227,8 @@ describe('ElderOnboardingWizard', () => {
         />,
       )
 
-      // We are on Step 2 — "Apa itu Clan?"
-      expect(screen.getByRole('heading', { name: 'Apa itu Clan?' })).toBeInTheDocument()
+      // We are on Step 2 — "Apa itu Rumpun Keluarga?"
+      expect(screen.getByRole('heading', { name: 'Apa itu Rumpun Keluarga?' })).toBeInTheDocument()
 
       fireEvent.click(screen.getByRole('button', { name: /kembali/i }))
 
@@ -261,7 +261,7 @@ describe('ElderOnboardingWizard', () => {
 
       // Step 3 — back → Step 2
       fireEvent.click(screen.getByRole('button', { name: /kembali/i }))
-      expect(screen.getByRole('heading', { name: 'Apa itu Clan?' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Apa itu Rumpun Keluarga?' })).toBeInTheDocument()
 
       // Step 2 — back → Step 1
       fireEvent.click(screen.getByRole('button', { name: /kembali/i }))
@@ -355,7 +355,7 @@ describe('ElderOnboardingWizard', () => {
           screen.queryByRole('heading', { name: 'Terjadi Kesalahan' }),
         ).not.toBeInTheDocument()
         expect(
-          screen.getByRole('heading', { name: 'Apa itu Clan?' }),
+          screen.getByRole('heading', { name: 'Apa itu Rumpun Keluarga?' }),
         ).toBeInTheDocument()
       })
     })

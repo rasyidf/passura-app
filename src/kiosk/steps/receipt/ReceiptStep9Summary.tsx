@@ -86,8 +86,8 @@ export function ReceiptStep9Summary({ draft, onNext, onBack, isLoading }: Receip
     >
       <div className="flex flex-col">
         <SummaryRow label="Grup Acara" value={draft.groupName ?? '—'} />
-        <SummaryRow label="Clan Penerima" value={draft.receiverClanName ?? '—'} />
-        <SummaryRow label="Clan Pemberi" value={draft.giverClanName ?? '—'} />
+        <SummaryRow label="Rumpun Penerima" value={draft.receiverClanName ?? '—'} />
+        <SummaryRow label="Rumpun Pemberi" value={draft.giverClanName ?? '—'} />
         <SummaryRow label="Jenis Kewajiban" value={obligationLabel} />
         <SummaryRow label="Jenis Aset" value={draft.assetType === 'money' ? 'Uang' : 'Hewan'} />
         <SummaryRow label="Jumlah" value={assetDescription} />

@@ -60,7 +60,7 @@ export function ReceiptStep3Giver({ draft, onNext, onBack, isLoading }: ReceiptS
       <StepCard
         stepIndex={2}
         totalSteps={10}
-        title="Pilih Clan Pemberi"
+        title="Pilih Rumpun Pemberi"
         isLoading={true}
       >
         <p className="text-lg text-muted-foreground">Memuat…</p>
@@ -73,11 +73,11 @@ export function ReceiptStep3Giver({ draft, onNext, onBack, isLoading }: ReceiptS
       <StepCard
         stepIndex={2}
         totalSteps={10}
-        title="Pilih Clan Pemberi"
+        title="Pilih Rumpun Pemberi"
         onBack={onBack}
         isLoading={isLoading}
       >
-        <KioskErrorBanner message="Belum ada clan yang terdaftar. Hubungi admin Anda." />
+        <KioskErrorBanner message="Belum ada rumpun keluarga yang terdaftar. Hubungi admin Anda." />
       </StepCard>
     )
   }
@@ -86,7 +86,7 @@ export function ReceiptStep3Giver({ draft, onNext, onBack, isLoading }: ReceiptS
     <StepCard
       stepIndex={2}
       totalSteps={10}
-      title="Pilih Clan Pemberi"
+      title="Pilih Rumpun Pemberi"
       onNext={handleNext}
       onBack={onBack}
       nextDisabled={!selectedId || !!validationError}

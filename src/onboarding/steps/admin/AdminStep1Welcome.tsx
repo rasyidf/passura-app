@@ -28,7 +28,7 @@ export function AdminStep1Welcome({ onNext, isLoading }: AdminStep1WelcomeProps)
         <p>Panduan ini akan membantu Anda menyiapkan:</p>
         <ul className="list-disc pl-6 space-y-2">
           <li>
-            <strong>Clan (Tongkonan)</strong> — unit rumah tangga atau garis
+            <strong>Rumpun Keluarga (Tongkonan)</strong> — unit rumah tangga atau garis
             keturunan dalam komunitas.
           </li>
           <li>
