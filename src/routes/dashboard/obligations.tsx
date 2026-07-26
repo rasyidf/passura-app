@@ -1,5 +1,9 @@
+import { lazy } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import ObligationsScreen from "@/components/screen/obligations/ObligationsScreen";
+
+const ObligationsScreen = lazy(
+  () => import("@/components/screen/obligations/ObligationsScreen")
+);
 
 export const Route = createFileRoute("/dashboard/obligations")({
   component: ObligationsScreen,
