@@ -94,7 +94,10 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
       {children}
       {WizardComponent &&
         createPortal(
-          <div className="fixed inset-0 z-50">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            aria-modal="true"
+          >
             <WizardComponent state={state} onComplete={() => {}} />
           </div>,
           document.body,

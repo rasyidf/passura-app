@@ -20,6 +20,10 @@ export interface StepCardProps {
 /**
  * Base layout card for every wizard and kiosk step.
  *
+ * Renders as a bounded card (max-w-2xl, max-h-[600px]) with a scrollable
+ * content area. Designed to be used inside a full-screen overlay backdrop
+ * provided by the parent (e.g. OnboardingGuard portal).
+ *
  * Requirements: 2.3, 2.4, 9.1, 9.2, 9.3, 9.4
  */
 export function StepCard({
@@ -43,31 +47,49 @@ export function StepCard({
   }, [title])
 
   return (
-    /* Outer shell: full-screen background with dimmed surround on large displays */
-    <div role="main" className="flex flex-col min-h-screen bg-muted/30">
-      {/*
-        Inner panel: centered card, capped at a comfortable reading width.
-        max-w-3xl (48rem / ~768px) feels like an app panel rather than a phone
-        column, while still leaving visible background on 2K/4K.
-        min-h-screen ensures it fills vertical space on small screens.
-      */}
-      <div className="flex flex-col flex-1 w-full max-w-3xl mx-auto bg-background shadow-sm min-h-screen px-8 py-10 md:px-12 md:py-14">
+    /*
+      Card: max width for comfortable reading, max height 600px so the card
+      never takes over the full screen. Content area scrolls when it overflows.
+      The parent overlay is responsible for centering this card.
+    */
+    <div
+      role="main"
+      className={cn(
+        'flex flex-col w-full max-w-2xl max-h-[600px]',
+        'bg-background rounded-xl shadow-lg border border-border',
+        'mx-auto overflow-hidden',
+      )}
+    >
+      {/* Header: progress + title — fixed, never scrolls away */}
+      <div className="px-8 pt-8 pb-4 shrink-0">
         {/* Progress indicator — Requirement 2.3, 9.4 */}
         <p
-          className="text-lg text-muted-foreground mb-6"
+          className="text-sm text-muted-foreground mb-3"
           aria-label={progressLabel}
         >
           {progressLabel}
         </p>
 
+        {/* Progress bar */}
+        <div className="w-full h-1.5 rounded-full bg-muted mb-5" aria-hidden="true">
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-300"
+            style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+          />
+        </div>
+
         {/* Step title — Requirement 9.1: minimum 24px */}
-        <h1 className={cn('kiosk-h1', 'mb-6')}>{title}</h1>
+        <h1 className={cn('kiosk-h1')}>{title}</h1>
+      </div>
 
-        {/* Step content */}
-        <div className="flex-1">{children}</div>
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto px-8 py-2 min-h-0">
+        {children}
+      </div>
 
-        {/* Navigation — Requirement 9.2 (48×48px), 9.3 (max one primary action) */}
-        <div className="flex items-center justify-between gap-4 mt-8">
+      {/* Navigation — fixed footer, never scrolls. Requirement 9.2 (48×48px), 9.3 */}
+      <div className="px-8 py-5 shrink-0 border-t border-border bg-background">
+        <div className="flex items-center justify-between gap-4">
           {/* Back button — secondary action, only shown when onBack is provided */}
           {onBack ? (
             <button

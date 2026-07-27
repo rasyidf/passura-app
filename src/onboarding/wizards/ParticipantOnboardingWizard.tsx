@@ -142,11 +142,13 @@ export function ParticipantOnboardingWizard({
   // ── Error overlay (Requirement 1.8) ──────────────────────────────────────
   if (writeError) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
-        <div className="max-w-md w-full mx-4 rounded-xl border border-destructive bg-destructive/10 p-6 space-y-4">
-          <p role="alert" className="text-lg font-semibold text-destructive">
+      <div className="flex flex-col w-full max-w-2xl max-h-[600px] bg-background rounded-xl shadow-lg border border-destructive mx-auto overflow-hidden">
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 px-8 py-10">
+          <p role="alert" className="text-lg font-semibold text-destructive text-center">
             {writeError}
           </p>
+        </div>
+        <div className="px-8 py-5 shrink-0 border-t border-border bg-background">
           <div className="flex gap-3">
             <button
               className="kiosk-btn flex-1 rounded-lg bg-primary text-primary-foreground"
