@@ -2,6 +2,15 @@
 
 export type ClanFormValues = { name: string; region: string };
 
+/**
+ * Form values for the full participant form used inside the Clans screen
+ * (ClanCard tree view). Includes gender, passedAway, and relation fields.
+ *
+ * NOTE: There is a *separate* simpler `ParticipantFormValues` in
+ * `participants/participants.constants.ts` used by the standalone Participants
+ * screen. That form has no gender / passedAway / relations — the two types are
+ * intentionally different and must NOT be cross-imported.
+ */
 export type ParticipantFormValues = {
   name: string;
   clan: string;
