@@ -1,25 +1,15 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { db } from "@/db/local-db";
-import { CloudflareD1Adapter } from "@/sync/adapters/cloudflare-d1";
+import { CloudflareD1Adapter, AuthError } from "@/sync/adapters/cloudflare-d1";
 import type { SyncEntry } from "@/sync/sync-adapter";
 import { toast } from "sonner";
 
 type SyncState = "idle" | "pushing" | "pulling" | "error" | "success";
 
-const adapter = new CloudflareD1Adapter();
+const PUSH_BATCH_SIZE = 200;
 
-const ENTITY_TABLE_MAP: Record<string, any> = {
-  clans: "clans",
-  elders: "elders",
-  participants: "participants",
-  groups: "groups",
-  animalTypes: "animalTypes",
-  loans: "loans",
-  receipts: "receipts",
-  handovers: "handovers",
-  obligations: "obligations",
-};
+const adapter = new CloudflareD1Adapter();
 
 export function useSync() {
   const qc = useQueryClient();
@@ -34,10 +24,12 @@ export function useSync() {
   }, []);
 
   const sync = useCallback(async () => {
+    // ── Offline guard ─────────────────────────────────────────────────────
     if (!navigator.onLine) {
-      toast.warning("Tidak ada koneksi internet.");
+      toast.warning("Tidak ada koneksi internet. Sinkronisasi tidak dilakukan.");
       return;
     }
+
     if (!adapter.isAvailable()) {
       toast.error("Belum login ke server. Konfigurasikan sinkronisasi terlebih dahulu.");
       return;
@@ -46,55 +38,116 @@ export function useSync() {
     try {
       // ── 1. Push pending local changes ────────────────────────────────────
       setState("pushing");
+
+      // Read tenantId from appConfig (Requirement 4.2)
+      const tenantCfg = await db.appConfig.get("tenant-id");
+      const tenantId = (tenantCfg?.value as string) ?? "";
+
       const pending = await db.syncLog.where("syncStatus").equals("pending").toArray();
 
       if (pending.length > 0) {
-        const entries: SyncEntry[] = pending.map((e) => ({
-          entityType: e.entityType,
-          entityId: e.entityId,
-          action: e.action,
-          data: e.data,
-          timestamp: e.createdAt,
-        }));
+        // Split into batches of at most 200 (Requirement 4.1)
+        for (let i = 0; i < pending.length; i += PUSH_BATCH_SIZE) {
+          const batch = pending.slice(i, i + PUSH_BATCH_SIZE);
 
-        const pushResult = await adapter.push("passura", entries);
+          const entries: SyncEntry[] = batch.map((e) => ({
+            entityType: e.entityType,
+            entityId: e.entityId,
+            action: e.action,
+            data: e.data,
+            timestamp: e.createdAt,
+          }));
 
-        // Mark accepted entries as synced
-        const acceptedIds = pending
-          .filter((_, i) => !pushResult.rejected.find((r) => r.id === pending[i].entityId))
-          .map((e) => e.id!)
-          .filter(Boolean);
+          let pushResult: Awaited<ReturnType<typeof adapter.push>>;
+          try {
+            pushResult = await adapter.push(tenantId, entries);
+          } catch (err) {
+            if (err instanceof AuthError) {
+              // 401: delete token, update state, prompt re-auth (Requirement 6.5)
+              await db.appConfig.delete("sync-token");
+              setState("error");
+              toast.error("Sesi server berakhir. Silakan autentikasi ulang di halaman Pengaturan.");
+              return;
+            }
+            // Network error or 5xx: leave all batch entries as 'pending' (Requirement 4.6)
+            toast.error("Gagal mengirim data ke server. Data yang belum disinkronkan tetap tersimpan.");
+            setState("error");
+            setTimeout(() => setState("idle"), 5000);
+            return;
+          }
 
-        await db.syncLog.bulkUpdate(
-          acceptedIds.map((id) => ({ key: id, changes: { syncStatus: "synced" } })),
-        );
+          // Build a map from entityId → syncLog row for this batch (Requirement 4.8)
+          const batchById = new Map(batch.map((e) => [e.entityId, e]));
 
-        if (pushResult.rejected.length > 0) {
-          console.warn("[sync] rejected entries:", pushResult.rejected);
+          // Process each per-entry result individually
+          for (const result of pushResult.results) {
+            const entry = batchById.get(result.id);
+            if (!entry || entry.id == null) continue;
+
+            if (result.status === "synced") {
+              // Accepted: mark as synced (Requirement 4.3)
+              await db.syncLog.update(entry.id, { syncStatus: "synced" });
+            } else if (result.status === "conflict") {
+              // Conflict: record status and reason (Requirement 4.4)
+              await db.syncLog.update(entry.id, {
+                syncStatus: "conflict",
+                syncError: result.reason ?? "conflict",
+              });
+            }
+            // internal_error: leave as 'pending' — no update (Requirement 4.5)
+          }
         }
       }
 
       // ── 2. Pull server changes ────────────────────────────────────────────
       setState("pulling");
       const cursorConfig = await db.appConfig.get("sync-cursor");
-      const cursors = { _global: (cursorConfig?.value as string) ?? "0" };
+      let cursor = (cursorConfig?.value as string) ?? "0";
 
-      const pullResult = await adapter.pull("passura", cursors);
-
-      // Apply pulled entities to local Dexie
-      for (const { type, data } of pullResult.entities) {
-        const tableName = type === "animal-types" ? "animalTypes" : type;
-        const table = (db as any)[tableName];
-        if (!table) continue;
-        for (const row of data) {
-          await table.put({ ...(row as object), syncStatus: "synced" });
+      let hasMore = true;
+      while (hasMore) {
+        let pullResult: Awaited<ReturnType<typeof adapter.pull>>;
+        try {
+          pullResult = await adapter.pull(tenantId, { _global: cursor });
+        } catch (err) {
+          if (err instanceof AuthError) {
+            await db.appConfig.delete("sync-token");
+            setState("error");
+            toast.error("Sesi server berakhir. Silakan autentikasi ulang di halaman Pengaturan.");
+            return;
+          }
+          // Any other pull error: preserve cursor, toast error (Requirement 5.7)
+          toast.error("Gagal mengambil data dari server.");
+          setState("error");
+          setTimeout(() => setState("idle"), 5000);
+          return;
         }
+
+        // Apply pulled entities to local Dexie with conflict guard (Requirement 5.3)
+        for (const { type, data } of pullResult.entities) {
+          const tableName = type === "animal-types" ? "animalTypes" : type;
+          const table = (db as any)[tableName];
+          if (!table) continue;
+
+          for (const row of data) {
+            const rowObj = row as Record<string, unknown> & { id: string };
+            // Conflict guard: skip if local record is 'pending'
+            const local = await table.get(rowObj.id);
+            if (local && local.syncStatus === "pending") continue;
+            await table.put({ ...rowObj, syncStatus: "synced" });
+          }
+        }
+
+        // Update cursor after each page (Requirement 5.4)
+        const newCursor = pullResult.cursors["_global"] ?? cursor;
+        await db.appConfig.put({ key: "sync-cursor", value: newCursor });
+        cursor = newCursor;
+
+        hasMore = pullResult.hasMore;
       }
 
-      // Save new cursor
-      await db.appConfig.put({ key: "sync-cursor", value: pullResult.cursors["_global"] ?? cursors._global });
-
-      // Invalidate all queries to refresh UI
+      // ── 3. Finalize ───────────────────────────────────────────────────────
+      // Invalidate all queries to refresh UI (Requirement 5.6)
       await qc.invalidateQueries();
 
       setState("success");

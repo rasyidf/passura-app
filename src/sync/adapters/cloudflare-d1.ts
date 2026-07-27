@@ -1,7 +1,30 @@
 import type { SyncAdapter, SyncEntry, SyncCursors, PushResult, PullResult, AuthCredentials, AuthResult } from "../sync-adapter";
 import { db } from "@/db/local-db";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8787";
+/**
+ * Thrown when the API returns HTTP 401 (Unauthorized).
+ * Callers (useSync) should catch this, delete the stored sync-token,
+ * update UI state, and prompt the user to re-authenticate.
+ */
+export class AuthError extends Error {
+  readonly code = "401";
+
+  constructor(message = "Unauthorized") {
+    super(message);
+    this.name = "AuthError";
+  }
+}
+
+/**
+ * Reads the API base URL at call time.
+ * Priority: `appConfig["api-url"]` (runtime override) → `VITE_API_URL` env var → localhost fallback.
+ */
+async function getApiBase(): Promise<string> {
+  const cfg = await db.appConfig.get("api-url");
+  const stored = cfg?.value as string | undefined;
+  if (stored && stored.trim()) return stored.trim();
+  return import.meta.env.VITE_API_URL ?? "http://localhost:8787";
+}
 
 export class CloudflareD1Adapter implements SyncAdapter {
   private token: string | null = null;
@@ -14,7 +37,8 @@ export class CloudflareD1Adapter implements SyncAdapter {
   }
 
   async authenticate(credentials: AuthCredentials): Promise<AuthResult> {
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
+    const apiBase = await getApiBase();
+    const res = await fetch(`${apiBase}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
@@ -34,7 +58,8 @@ export class CloudflareD1Adapter implements SyncAdapter {
   async push(tenantId: string, entries: SyncEntry[]): Promise<PushResult> {
     if (!this.token) throw new Error("Not authenticated");
 
-    const res = await fetch(`${API_BASE}/api/sync/push`, {
+    const apiBase = await getApiBase();
+    const res = await fetch(`${apiBase}/api/sync/push`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -43,6 +68,7 @@ export class CloudflareD1Adapter implements SyncAdapter {
       body: JSON.stringify({ tenantId, entries }),
     });
 
+    if (res.status === 401) throw new AuthError();
     if (!res.ok) throw new Error(`Push failed: ${res.status}`);
     return res.json();
   }
@@ -51,13 +77,16 @@ export class CloudflareD1Adapter implements SyncAdapter {
     if (!this.token) throw new Error("Not authenticated");
 
     const since = cursors["_global"] ?? "0";
-    const url = `${API_BASE}/api/sync/pull?since=${since}`;
+    const apiBase = await getApiBase();
+    const url = `${apiBase}/api/sync/pull?since=${since}&tenantId=${encodeURIComponent(tenantId)}`;
 
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${this.token}` },
     });
 
+    if (res.status === 401) throw new AuthError();
     if (!res.ok) throw new Error(`Pull failed: ${res.status}`);
+
     const data = await res.json() as {
       entities: Record<string, { data: unknown[]; hasMore: boolean }>;
       serverCursor: string;

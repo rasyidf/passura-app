@@ -15,8 +15,7 @@ import type {
 export class NoopAdapter implements SyncAdapter {
   async push(_tenantId: string, entries: SyncEntry[]): Promise<PushResult> {
     return {
-      accepted: entries.length,
-      rejected: [],
+      results: entries.map((e) => ({ id: e.entityId, status: "synced" as const })),
       serverCursor: "",
     };
   }

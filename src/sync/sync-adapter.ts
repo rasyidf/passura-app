@@ -11,9 +11,14 @@ export interface SyncEntry {
   timestamp: number;
 }
 
+export interface PushResultEntry {
+  id: string;
+  status: "synced" | "conflict" | "internal_error";
+  reason?: string;
+}
+
 export interface PushResult {
-  accepted: number;
-  rejected: { id: string; reason: string }[];
+  results: PushResultEntry[];
   serverCursor: string;
 }
 
