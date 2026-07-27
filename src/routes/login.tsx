@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/auth/session";
 import { seedIfEmpty } from "@/db/seed";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -52,7 +52,7 @@ function LoginPage() {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="text-center space-y-3">
-          <Loader2 className="size-8 animate-spin text-primary mx-auto" />
+          <Spinner className="size-8 text-primary mx-auto" />
           <p className="text-sm text-muted-foreground">
             {seeding ? "Menyiapkan data demo..." : "Memuat..."}
           </p>

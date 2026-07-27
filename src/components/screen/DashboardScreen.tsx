@@ -2,7 +2,6 @@ import { useLocalQuery } from "@/hooks/useLocalQuery";
 import { Link } from "@tanstack/react-router";
 import {
   AlertCircle,
-  Loader2,
   Monitor,
   TrendingUp,
   Users,
@@ -14,6 +13,8 @@ import {
   CheckCircle2,
   BarChart3,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -115,7 +116,7 @@ export function DashboardScreen() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center h-full">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <Spinner className="size-6 text-muted-foreground" />
       </div>
     );
   }
@@ -393,7 +394,11 @@ function Panel({
       </CardHeader>
       <CardContent className="px-4 py-1">
         {isEmpty ? (
-          <p className="text-sm text-muted-foreground py-4">{emptyText}</p>
+          <Empty className="border-none py-4">
+            <EmptyHeader>
+              <EmptyTitle>{emptyText}</EmptyTitle>
+            </EmptyHeader>
+          </Empty>
         ) : (
           children
         )}

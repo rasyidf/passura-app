@@ -27,8 +27,10 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
-    Loader2,
 } from "lucide-react";
+import { Spinner } from "./spinner";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "./empty";
+import { Skeleton } from "./skeleton";
 import {
     ColumnDef,
     ColumnFiltersState,
@@ -487,18 +489,19 @@ export function DataTable<T extends { id?: string | number }>({
                                 <TableRow key={`skeleton-${rowIndex}`}>
                                     {finalColumns.map((col, colIndex) => (
                                         <TableCell key={`skeleton-${rowIndex}-${colIndex}`}>
-                                            <div className="h-4 w-full rounded bg-muted animate-pulse" />
+                                            <Skeleton className="h-4 w-full" />
                                         </TableCell>
                                     ))}
                                 </TableRow>
                             ))
                         ) : table.getRowModel().rows.length === 0 ? (
                             <TableRow>
-                                <TableCell
-                                    colSpan={finalColumns.length}
-                                    className="h-24 text-center text-muted-foreground"
-                                >
-                                    {emptyMessage}
+                                <TableCell colSpan={finalColumns.length} className="h-32 p-0">
+                                    <Empty className="border-none rounded-none">
+                                        <EmptyHeader>
+                                            <EmptyTitle>{emptyMessage}</EmptyTitle>
+                                        </EmptyHeader>
+                                    </Empty>
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -538,7 +541,7 @@ export function DataTable<T extends { id?: string | number }>({
                     <div className="ml-auto text-xs text-muted-foreground">
                         {loading ? (
                             <span className="flex items-center gap-1">
-                                <Loader2 className="size-3 animate-spin" />
+                                <Spinner className="size-3" />
                                 Memuat...
                             </span>
                         ) : (

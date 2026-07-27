@@ -1,11 +1,28 @@
 import { useEffect } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { useSync } from "@/hooks/useSync";
+import { db } from "@/db/local-db";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, CheckCircle2, AlertTriangle, Wifi, WifiOff, Loader2 } from "lucide-react";
+import { RefreshCw, CheckCircle2, AlertTriangle, Wifi, WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
 
 export function SyncStatusBar() {
   const { state, pendingCount, lastSyncAt, sync, countPending } = useSync();
+
+  // Reactively query conflict count from syncLog (Requirement 8.1)
+  const conflictCount = useLiveQuery(
+    () => db.syncLog.where("syncStatus").equals("conflict").count(),
+    [],
+    0
+  ) ?? 0;
+
+  // Reactively read auto-sync preference from appConfig (Requirement 7.7)
+  const autoSyncEnabled = useLiveQuery(
+    () => db.appConfig.get("auto-sync-enabled").then((cfg) => cfg?.value as boolean | undefined),
+    [],
+    undefined
+  );
 
   // Count pending on mount and whenever visibility changes
   useEffect(() => {
@@ -33,6 +50,21 @@ export function SyncStatusBar() {
         </span>
       )}
 
+      {/* Conflict count badge — shown when conflicts exist (Requirement 8.1) */}
+      {conflictCount > 0 && (
+        <span className="flex items-center gap-1 text-red-600">
+          <AlertTriangle className="size-3" />
+          {conflictCount} konflik
+        </span>
+      )}
+
+      {/* Auto-sync off indicator — shown when explicitly disabled (Requirement 7.7) */}
+      {autoSyncEnabled === false && (
+        <span className="flex items-center gap-1 text-muted-foreground/70">
+          Auto-sync off
+        </span>
+      )}
+
       {state === "success" && lastSyncAt && (
         <span className="flex items-center gap-1 text-green-600">
           <CheckCircle2 className="size-3" />
@@ -42,7 +74,7 @@ export function SyncStatusBar() {
 
       {(state === "pushing" || state === "pulling") && (
         <span className="flex items-center gap-1">
-          <Loader2 className="size-3 animate-spin" />
+          <Spinner className="size-3" />
           {state === "pushing" ? "Mengirim..." : "Mengambil..."}
         </span>
       )}
