@@ -14,30 +14,30 @@ The implementation is TypeScript throughout (matching the existing codebase).
 
 ## Tasks
 
-- [ ] 1. Data layer foundations — types, Dexie migration, D1 migration
-  - [ ] 1.1 Extend `SyncLogEntry` type and bump Dexie to version 5
+- [x] 1. Data layer foundations — types, Dexie migration, D1 migration
+  - [x] 1.1 Extend `SyncLogEntry` type and bump Dexie to version 5
     - Add `syncError?: string` field to `SyncLogEntry` in `src/db/types.ts`
     - Add `tenantId` JSDoc note to `AppConfig` explaining the `tenant-id` key
     - Bump `PassuraDb` to version 5 in `src/db/local-db.ts` with stores entry: `syncLog: "++id, entityType, entityId, action, syncStatus, [syncStatus+createdAt], syncError"`
     - _Requirements: 4.4, 8.2_
 
-  - [ ] 1.2 Add `tenantId` column to Drizzle D1 schema and create migration file
+  - [x] 1.2 Add `tenantId` column to Drizzle D1 schema and create migration file
     - Add `tenantId: text("tenant_id").notNull().default("")` to all 9 entity tables + `syncLog` in `api/src/db/schema.ts`
     - Add `syncError: text("sync_error")` to `syncLog` in schema
     - Create `drizzle/0001_add_tenant_id.sql` with `ALTER TABLE` statements for all 10 tables, `sync_error` column on `sync_log`, and `CREATE INDEX` statements per the design
     - _Requirements: 3.2_
 
-  - [ ] 1.3 Add `tenantId` to JWT payload interface and update `signJwt` signature
+  - [x] 1.3 Add `tenantId` to JWT payload interface and update `signJwt` signature
     - Add `tenantId: string` to the `JwtPayload` interface in `api/src/lib/auth.ts`
     - Update `signJwt` parameter type from `Omit<JwtPayload, "iat" | "exp">` to include `tenantId`
     - _Requirements: 3.8_
 
-- [ ] 2. Backup engine — pure functions
-  - [ ] 2.1 Create `src/backup/backup-types.ts`
+- [x] 2. Backup engine — pure functions
+  - [x] 2.1 Create `src/backup/backup-types.ts`
     - Define and export `BackupFile`, `ExportResult`, `ImportResult` interfaces exactly as specified in the design
     - _Requirements: 9.3_
 
-  - [ ] 2.2 Create `src/backup/backup-engine.ts` — `exportBackup`
+  - [x] 2.2 Create `src/backup/backup-engine.ts` — `exportBackup`
     - Implement `exportBackup(tenantId: string): Promise<ExportResult>` reading all 9 entity tables via `db[table].toArray()`
     - Build `BackupFile` with `version: 1`, `tenantId`, ISO-8601 `exportedAt`, and `entities` object
     - Ensure timestamps are integers via `Math.trunc`
@@ -51,7 +51,7 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - **Property 26: Exported backup structure is well-formed**
     - **Validates: Requirements 9.3, 9.5**
 
-  - [ ] 2.4 Implement `importBackup` validation phase in `backup-engine.ts`
+  - [x] 2.4 Implement `importBackup` validation phase in `backup-engine.ts`
     - Implement `importBackup(file: File, localTenantId: string): Promise<{ backup: BackupFile; tenantMismatch: boolean }>`
     - Sequential validation: file size ≤ 50 MB → JSON parse → `version === 1` check → `entities` object check
     - Return `{ backup, tenantMismatch: backup.tenantId !== localTenantId }`
@@ -62,7 +62,7 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - **Property 28: Import rejects invalid JSON and bad structure**
     - **Validates: Requirements 10.2, 10.3, 11.4**
 
-  - [ ] 2.6 Implement `applyImport` write phase in `backup-engine.ts`
+  - [x] 2.6 Implement `applyImport` write phase in `backup-engine.ts`
     - Implement `applyImport(backup: BackupFile): Promise<ImportResult>`
     - Loop over `ENTITY_TABLES`; for each table call `db[table].bulkPut(records.map(r => ({ ...r, syncStatus: "pending" })))`
     - Preserve original `id`, `createdAt`, `updatedAt`
@@ -76,11 +76,11 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - **Property 31: Backup round-trip preserves record fidelity**
     - **Validates: Requirements 10.7, 11.1, 11.2, 11.3**
 
-- [ ] 3. Checkpoint — backup engine unit tests pass
+- [x] 3. Checkpoint — backup engine unit tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. API server — multitenancy
-  - [ ] 4.1 Update `POST /api/auth/login` to include `tenantId` in JWT
+- [x] 4. API server — multitenancy
+  - [x] 4.1 Update `POST /api/auth/login` to include `tenantId` in JWT
     - Read `elder.tenantId` after password verification
     - If `elder.tenantId` is null or empty string, return `403` without issuing a JWT
     - Pass `tenantId` to `signJwt({ elderId, email, role, tenantId })`
@@ -91,7 +91,7 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - Also cover: elder with null tenantId → 403; elder with non-empty tenantId → JWT contains matching claim
     - **Validates: Requirements 3.8, 3.9, 3.10**
 
-  - [ ] 4.3 Update `POST /api/sync/push` for tenant validation and scoped writes
+  - [x] 4.3 Update `POST /api/sync/push` for tenant validation and scoped writes
     - Validate `body.tenantId` is a non-empty string; return 400 if absent or empty
     - On `create`/`update`: set `tenant_id` = `auth.tenantId` (JWT claim) on every row — ignore `body.tenantId` for the DB write
     - On `delete`: scope delete to `WHERE id = ? AND tenant_id = auth.tenantId`; no-op if no matching row
@@ -104,7 +104,7 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - **Property 7: Cross-tenant delete isolation**
     - **Validates: Requirements 3.3, 3.4**
 
-  - [ ] 4.5 Update `GET /api/sync/pull` for tenant validation and scoped queries
+  - [x] 4.5 Update `GET /api/sync/pull` for tenant validation and scoped queries
     - Validate `tenantId` query parameter present; return 400 if absent
     - Validate `tenantId` param === `auth.tenantId` JWT claim; return 403 if they differ
     - Filter all entity queries with `WHERE tenant_id = auth.tenantId AND updated_at > since`
@@ -116,17 +116,17 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - **Property 8: Pull filters to requesting tenant only**
     - **Validates: Requirements 3.5, 3.6**
 
-- [ ] 5. Checkpoint — API multitenancy tests pass
+- [x] 5. Checkpoint — API multitenancy tests pass
   - Ensure all API unit tests and property tests pass, ask the user if questions arise.
 
-- [ ] 6. Sync engine — `useSync` hook and `CloudflareD1Adapter`
-  - [ ] 6.1 Update `CloudflareD1Adapter` for tenantId, 401 handling, and runtime API base
+- [x] 6. Sync engine — `useSync` hook and `CloudflareD1Adapter`
+  - [x] 6.1 Update `CloudflareD1Adapter` for tenantId, 401 handling, and runtime API base
     - Add async `getApiBase()` helper that reads `appConfig["api-url"]` first, falls back to `VITE_API_URL`
     - Update `pull()` to pass `tenantId` as query param and read API base at call time
     - Throw `AuthError` (a custom error class with `code: "401"`) when API returns 401 on push or pull
     - _Requirements: 3.7, 6.5_
 
-  - [ ] 6.2 Rewrite `useSync` push phase — batching, per-entry results, 401 handling
+  - [x] 6.2 Rewrite `useSync` push phase — batching, per-entry results, 401 handling
     - Read `tenantId` from `appConfig["tenant-id"]`
     - Batch pending entries into groups of ≤ 200 and push each batch
     - On `accepted` entry: `syncLog.update(id, { syncStatus: "synced" })`
@@ -146,7 +146,7 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - **Property 14: Offline sync makes no Dexie modifications**
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.6, 4.7**
 
-  - [ ] 6.4 Rewrite `useSync` pull phase — conflict guard, cursor, pagination
+  - [x] 6.4 Rewrite `useSync` pull phase — conflict guard, cursor, pagination
     - Read cursor from `appConfig["sync-cursor"]` (default `"0"`)
     - On each pulled row: check local `syncStatus`; skip `table.put()` if local is `"pending"` (conflict guard)
     - Update `appConfig["sync-cursor"]` to `serverCursor` after each page
@@ -163,8 +163,8 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - **Property 20: 401 response deletes the stored sync token**
     - **Validates: Requirements 5.3, 5.4, 5.7, 6.5**
 
-- [ ] 7. Auto-sync scheduler hook
-  - [ ] 7.1 Create `src/hooks/useSyncScheduler.ts`
+- [x] 7. Auto-sync scheduler hook
+  - [x] 7.1 Create `src/hooks/useSyncScheduler.ts`
     - Implement `useSyncScheduler(sync: () => Promise<void>): void`
     - Read `auto-sync-enabled` and `sync-token` from `appConfig` reactively (re-run effect when they change)
     - Schedule `setInterval(sync, 5 * 60 * 1000)` only when: `navigator.onLine && tokenPresent && autoSyncEnabled`
@@ -172,35 +172,35 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - Clear interval on unmount via `useEffect` cleanup
     - _Requirements: 7.1, 7.4, 7.5, 7.8_
 
-  - [ ] 7.2 Mount `useSyncScheduler` in dashboard route layout
+  - [x] 7.2 Mount `useSyncScheduler` in dashboard route layout
     - Import and call `useSyncScheduler(sync)` inside the `DashboardLayout` component in `src/routes/dashboard/route.tsx`
     - Also add `SyncStatusBar` to the layout footer here if not yet present
     - _Requirements: 7.1_
 
-- [ ] 8. Tenant ID initialisation in app startup
-  - [ ] 8.1 Add UUID v4 auto-generation to `OnboardingGuard` or dashboard layout
+- [x] 8. Tenant ID initialisation in app startup
+  - [x] 8.1 Add UUID v4 auto-generation to `OnboardingGuard` or dashboard layout
     - On mount: check `appConfig["tenant-id"]`; if absent, generate a UUID v4 (use `crypto.randomUUID()`) and persist it
     - Must run before any authenticated route renders
     - _Requirements: 2.1, 2.2_
 
-- [ ] 9. Settings screen — routes and layout
-  - [ ] 9.1 Create the `/dashboard/settings` TanStack Router file-based route
+- [x] 9. Settings screen — routes and layout
+  - [x] 9.1 Create the `/dashboard/settings` TanStack Router file-based route
     - Create `src/routes/dashboard/settings.tsx` with `createFileRoute("/dashboard/settings")` exporting the route and rendering `<SettingsScreen />`
     - Create redirect stubs for old routes: `src/routes/dashboard/profile.tsx`, `src/routes/dashboard/backup.tsx`, `src/routes/dashboard/sync.tsx` — each redirects to `/dashboard/settings`
     - _Requirements: 1.1_
 
-  - [ ] 9.2 Update Sidebar navigation to replace the three Konfigurasi items with a single "Pengaturan" item
+  - [x] 9.2 Update Sidebar navigation to replace the three Konfigurasi items with a single "Pengaturan" item
     - Replace the three items (`/dashboard/profile`, `/dashboard/backup`, `/dashboard/sync`) in `navGroups` with one item: `{ href: "/dashboard/settings", label: "Pengaturan", icon: <Settings /> }`
     - _Requirements: 1.2, 2.3_
 
-  - [ ] 9.3 Create `src/components/screen/settings/SettingsScreen.tsx` — top-level shell with five tabs
+  - [x] 9.3 Create `src/components/screen/settings/SettingsScreen.tsx` — top-level shell with five tabs
     - Use shadcn/ui `Tabs` with tab keys: `tenant`, `sync`, `backup`, `conflicts`, `danger`
     - Read `useAuth()` for the authenticated elder; pass `isSuperadmin` flag down to child tab components
     - Render: `<TenantTab>`, `<SyncTab>`, `<BackupTab>`, `<ConflictsTab>`, `<DangerZoneTab>`
     - _Requirements: 1.1, 1.3, 1.4_
 
-- [ ] 10. Tenant tab and Sync tab
-  - [ ] 10.1 Create `src/components/screen/settings/TenantTab.tsx`
+- [x] 10. Tenant tab and Sync tab
+  - [x] 10.1 Create `src/components/screen/settings/TenantTab.tsx`
     - Display current `appConfig["tenant-id"]` in a read-only field (all roles)
     - Display current `appConfig["api-url"]` (or `VITE_API_URL` fallback)
     - For superadmin: editable Tenant ID override with save button; validate non-empty after `.trim()` (show inline error if blank); write to `appConfig["tenant-id"]` on confirm
@@ -213,7 +213,7 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - **Property 4: Tenant ID validation — whitespace strings are rejected**
     - **Validates: Requirements 1.5, 1.6, 2.5, 2.6**
 
-  - [ ] 10.3 Create `src/components/screen/settings/SyncTab.tsx`
+  - [x] 10.3 Create `src/components/screen/settings/SyncTab.tsx`
     - Display sync authentication status: decode `appConfig["sync-token"]`; if valid non-expired JWT → show "Authenticated" + expiry date; otherwise → "Not authenticated"
     - For superadmin: email + password form that calls `adapter.authenticate()` → on success store token and update status; on failure show API error message; on network error show generic message
     - For superadmin: "Sign Out from Server" button that deletes `appConfig["sync-token"]`
@@ -226,8 +226,8 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - **Property 19: JWT status display reflects token validity**
     - **Validates: Requirements 6.2, 6.3, 6.6, 6.8**
 
-- [ ] 11. Backup tab
-  - [ ] 11.1 Create `src/components/screen/settings/BackupTab.tsx`
+- [x] 11. Backup tab
+  - [x] 11.1 Create `src/components/screen/settings/BackupTab.tsx`
     - For superadmin: "Export Backup" button; on click call `exportBackup(tenantId)` then `downloadJson(backup)`; on success show toast with per-table counts; on error show error toast without triggering download
     - For superadmin: "Import Backup" file input (`.json` only); on file select call `importBackup(file, localTenantId)`:
       - On validation error: show error message, no further action
@@ -237,8 +237,8 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - Hide both controls entirely for non-superadmin
     - _Requirements: 9.1, 9.2, 9.4, 9.6, 9.7, 10.1, 10.4, 10.5, 10.6, 10.8, 10.9_
 
-- [ ] 12. Conflicts tab and SyncStatusBar updates
-  - [ ] 12.1 Create `src/components/screen/settings/ConflictsTab.tsx`
+- [x] 12. Conflicts tab and SyncStatusBar updates
+  - [x] 12.1 Create `src/components/screen/settings/ConflictsTab.tsx`
     - Query `db.syncLog.where("syncStatus").equals("conflict").toArray()` reactively
     - Render a table with columns: entity type, entity ID, action, `syncError`
     - "Discard Local" button per row: call `GET /api/:entityType/:entityId` (using the existing `entityRoutes`); on success delete syncLog entry and `db[table].put(serverRecord)`; on failure show error toast, leave entry and record unchanged
@@ -253,14 +253,14 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - **Property 24: "Discard Local" failure leaves entry and local record unchanged**
     - **Validates: Requirements 8.1, 8.2, 8.4, 8.6**
 
-  - [ ] 12.3 Update `SyncStatusBar` — conflict count badge and auto-sync indicator
+  - [x] 12.3 Update `SyncStatusBar` — conflict count badge and auto-sync indicator
     - Add `conflictCount` by querying `syncLog WHERE syncStatus='conflict'` (alongside existing `pendingCount`)
     - Display conflict count badge (red, with `AlertTriangle`) when `conflictCount > 0`
     - Read `appConfig["auto-sync-enabled"]` and display "Auto-sync off" label when `false`
     - _Requirements: 7.7, 8.1_
 
-- [ ] 13. Danger Zone tab
-  - [ ] 13.1 Create `src/components/screen/settings/DangerZoneTab.tsx`
+- [x] 13. Danger Zone tab
+  - [x] 13.1 Create `src/components/screen/settings/DangerZoneTab.tsx`
     - For superadmin: red "Reset Semua Data Lokal" button that opens a confirmation dialog
     - Dialog requires the user to type `"RESET"` into an input field before the confirm button is enabled
     - On confirm: clear all Dexie tables in order (entity tables + `syncLog` + `appConfig`); if any `.clear()` fails show error toast and leave remaining tables intact
@@ -278,7 +278,7 @@ The implementation is TypeScript throughout (matching the existing codebase).
     - **Property 2: Sidebar navigation link is visible for all roles**
     - **Validates: Requirements 1.2, 1.3, 9.1, 10.1, 12.1**
 
-- [ ] 15. Final checkpoint — all tests pass, wiring complete
+- [x] 15. Final checkpoint — all tests pass, wiring complete
   - Ensure all unit tests and property tests pass.
   - Verify the full sync round-trip: export, Sidebar navigation, Settings tabs, conflict resolution.
   - Ask the user if questions arise.
