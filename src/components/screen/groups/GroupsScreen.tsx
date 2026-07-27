@@ -1,33 +1,18 @@
 import { useState, useMemo } from "react";
 import { useLocalQuery } from "@/hooks/useLocalQuery";
 import { useCreateDoc, useUpdateDoc, useDeleteDoc } from "@/hooks/useLocalMutation";
-import { useForm, Controller } from "react-hook-form";
 import DataTable from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import { Field, FieldLabel, FieldError } from "@/components/ui/field";
-import { MultiRelationshipInput } from "@/components/ui/relationship-input";
-import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
+import { toast } from "sonner";
 import { Plus, Users } from "lucide-react";
 import type { Clan, Group } from "@/db/types";
-
-type FormValues = {
-  name: string;
-  eventName: string;
-  description: string;
-  members: string[];
-};
+import { GroupFormDialog, type GroupFormValues } from "./GroupFormDialog";
+import { GroupClanViewerDialog } from "./GroupClanViewerDialog";
 
 export default function GroupsScreen() {
   const { data, isLoading } = useLocalQuery<Group>("groups");
@@ -44,7 +29,6 @@ export default function GroupsScreen() {
   const rows = data?.docs ?? [];
   const clans = clansData?.docs ?? [];
 
-  // Build a lookup map for fast clan name resolution
   const clanById = useMemo(() => {
     const map: Record<string, Clan> = {};
     for (const c of clans) map[c.id] = c;
@@ -52,13 +36,8 @@ export default function GroupsScreen() {
   }, [clans]);
 
   const clanOptions = useMemo(
-    () =>
-      clans.map((c) => ({
-        value: c.id,
-        label: c.name,
-        description: c.region,
-      })),
-    [clans]
+    () => clans.map((c) => ({ value: c.id, label: c.name, description: c.region })),
+    [clans],
   );
 
   const columns: ColumnDef<Group>[] = useMemo(
@@ -104,7 +83,7 @@ export default function GroupsScreen() {
         },
       },
     ],
-    []
+    [],
   );
 
   return (
@@ -132,13 +111,13 @@ export default function GroupsScreen() {
         emptyMessage="Belum ada grup. Klik 'Buat Grup' untuk memulai."
       />
 
-      {/* Create */}
+      {/* Create dialog */}
       <GroupFormDialog
         open={showCreate}
         onOpenChange={setShowCreate}
         title="Buat Grup Baru"
         clanOptions={clanOptions}
-        onSubmit={async (values) => {
+        onSubmit={async (values: GroupFormValues) => {
           await createGroup.mutateAsync(values);
           toast.success("Grup berhasil dibuat");
           setShowCreate(false);
@@ -146,7 +125,7 @@ export default function GroupsScreen() {
         loading={createGroup.isPending}
       />
 
-      {/* Edit */}
+      {/* Edit dialog */}
       <GroupFormDialog
         open={!!editItem}
         onOpenChange={(o) => !o && setEditItem(null)}
@@ -162,7 +141,7 @@ export default function GroupsScreen() {
               }
             : undefined
         }
-        onSubmit={async (values) => {
+        onSubmit={async (values: GroupFormValues) => {
           if (!editItem) return;
           await updateGroup.mutateAsync({ id: editItem.id, data: values });
           toast.success("Grup berhasil diperbarui");
@@ -171,20 +150,17 @@ export default function GroupsScreen() {
         loading={updateGroup.isPending}
       />
 
-      {/* Delete */}
+      {/* Delete confirmation */}
       <Dialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Hapus Grup</DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin menghapus grup{" "}
-              <strong>{deleteItem?.name}</strong>?
+              Apakah Anda yakin ingin menghapus grup <strong>{deleteItem?.name}</strong>?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteItem(null)}>
-              Batal
-            </Button>
+            <Button variant="outline" onClick={() => setDeleteItem(null)}>Batal</Button>
             <Button
               variant="destructive"
               disabled={deleteGroup.isPending}
@@ -201,195 +177,12 @@ export default function GroupsScreen() {
         </DialogContent>
       </Dialog>
 
-      {/* Clan detail viewer */}
-      <Dialog
-        open={!!viewClanGroup}
-        onOpenChange={(o) => !o && setViewClanGroup(null)}
-      >
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Clan dalam "{viewClanGroup?.name}"</DialogTitle>
-            <DialogDescription>
-              Daftar clan yang tergabung dalam grup ini.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 py-2 max-h-72 overflow-y-auto">
-            {(viewClanGroup?.members ?? []).length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Belum ada clan.
-              </p>
-            ) : (
-              viewClanGroup?.members.map((clanId) => {
-                const clan = clanById[clanId];
-                return (
-                  <div
-                    key={clanId}
-                    className="flex items-center gap-2 rounded-lg border px-3 py-2"
-                  >
-                    <Users className="size-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {clan?.name ?? clanId}
-                      </p>
-                      {clan?.region && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {clan.region}
-                        </p>
-                      )}
-                    </div>
-                    {!clan && (
-                      <Badge variant="destructive" className="ml-auto text-xs">
-                        Tidak ditemukan
-                      </Badge>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setViewClanGroup(null)}>
-              Tutup
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Clan viewer dialog */}
+      <GroupClanViewerDialog
+        group={viewClanGroup}
+        clanById={clanById}
+        onClose={() => setViewClanGroup(null)}
+      />
     </div>
-  );
-}
-
-// ─── Form Dialog ──────────────────────────────────────────────────────────────
-
-function GroupFormDialog({
-  open,
-  onOpenChange,
-  title,
-  clanOptions,
-  defaultValues,
-  onSubmit,
-  loading,
-}: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  title: string;
-  clanOptions: { value: string; label: string; description?: string }[];
-  defaultValues?: FormValues;
-  onSubmit: (v: FormValues) => Promise<void>;
-  loading: boolean;
-}) {
-  const defaults: FormValues = defaultValues ?? {
-    name: "",
-    eventName: "",
-    description: "",
-    members: [],
-  };
-
-  const { control, handleSubmit } = useForm<FormValues>({
-    defaultValues: defaults,
-    values: defaults,
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Nama Grup */}
-          <Controller
-            control={control}
-            name="name"
-            rules={{ required: "Nama wajib diisi" }}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={field.name}>Nama Grup</FieldLabel>
-                <Input
-                  id={field.name}
-                  placeholder="Rambu Solo' Kampung X"
-                  aria-invalid={fieldState.invalid}
-                  {...field}
-                />
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
-
-          {/* Nama Acara */}
-          <Controller
-            control={control}
-            name="eventName"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={field.name}>Nama Acara</FieldLabel>
-                <Input
-                  id={field.name}
-                  placeholder="Rambu Solo'"
-                  aria-invalid={fieldState.invalid}
-                  {...field}
-                />
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
-
-          {/* Deskripsi */}
-          <Controller
-            control={control}
-            name="description"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={field.name}>Deskripsi</FieldLabel>
-                <Textarea
-                  id={field.name}
-                  placeholder="Keterangan grup..."
-                  aria-invalid={fieldState.invalid}
-                  {...field}
-                />
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
-
-          {/* Clan Members */}
-          <Controller
-            control={control}
-            name="members"
-            render={({ field }) => (
-              <Field>
-                <FieldLabel>Clan Anggota</FieldLabel>
-                <MultiRelationshipInput
-                  options={clanOptions}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Tambah clan..."
-                  searchPlaceholder="Cari clan..."
-                  emptyMessage="Clan tidak ditemukan."
-                />
-              </Field>
-            )}
-          />
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Batal
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Menyimpan..." : "Simpan"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }
