@@ -24,8 +24,6 @@ import {
   Network,
   ScrollText,
   Menu as MenuIcon,
-  HardDrive,
-  RefreshCw,
   ChevronUp,
   Sun,
   Moon,
@@ -76,9 +74,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Konfigurasi",
     items: [
-      { href: "/dashboard/profile", label: "Pengaturan", icon: <Settings className="size-4" /> },
-      { href: "/dashboard/backup",  label: "Backup",     icon: <HardDrive className="size-4" /> },
-      { href: "/dashboard/sync",    label: "Sinkronisasi", icon: <RefreshCw className="size-4" /> },
+      { href: "/dashboard/settings", label: "Pengaturan", icon: <Settings className="size-4" /> },
     ],
   },
 ];
