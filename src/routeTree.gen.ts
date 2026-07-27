@@ -23,6 +23,7 @@ import { Route as DashboardObligationsRouteImport } from './routes/dashboard/obl
 import { Route as DashboardParticipantsRouteImport } from './routes/dashboard/participants'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardReceiptsRouteImport } from './routes/dashboard/receipts'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardSyncRouteImport } from './routes/dashboard/sync'
 
 const IndexRoute = IndexRouteImport.update({
@@ -95,6 +96,11 @@ const DashboardReceiptsRoute = DashboardReceiptsRouteImport.update({
   path: '/receipts',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const DashboardSyncRoute = DashboardSyncRouteImport.update({
   id: '/sync',
   path: '/sync',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/participants': typeof DashboardParticipantsRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/sync': typeof DashboardSyncRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/dashboard/participants': typeof DashboardParticipantsRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/sync': typeof DashboardSyncRoute
   '/dashboard': typeof DashboardIndexRoute
 }
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/dashboard/participants': typeof DashboardParticipantsRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/receipts': typeof DashboardReceiptsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/sync': typeof DashboardSyncRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/dashboard/participants'
     | '/dashboard/profile'
     | '/dashboard/receipts'
+    | '/dashboard/settings'
     | '/dashboard/sync'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/dashboard/participants'
     | '/dashboard/profile'
     | '/dashboard/receipts'
+    | '/dashboard/settings'
     | '/dashboard/sync'
     | '/dashboard'
   id:
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/dashboard/participants'
     | '/dashboard/profile'
     | '/dashboard/receipts'
+    | '/dashboard/settings'
     | '/dashboard/sync'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
@@ -311,6 +323,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardReceiptsRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/sync': {
       id: '/dashboard/sync'
       path: '/sync'
@@ -332,6 +351,7 @@ interface DashboardRouteRouteChildren {
   DashboardParticipantsRoute: typeof DashboardParticipantsRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardReceiptsRoute: typeof DashboardReceiptsRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSyncRoute: typeof DashboardSyncRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
@@ -347,6 +367,7 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardParticipantsRoute: DashboardParticipantsRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardReceiptsRoute: DashboardReceiptsRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSyncRoute: DashboardSyncRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }

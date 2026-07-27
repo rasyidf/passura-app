@@ -2,12 +2,15 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { AuthGuard } from "@/auth/guard";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
+import { SyncStatusBar } from "@/components/layout/SyncStatusBar";
 import { KioskProvider } from "@/kiosk/KioskContext";
 import { KioskOverlay } from "@/kiosk/KioskOverlay";
 import { OnboardingGuard } from "@/onboarding/OnboardingGuard";
+import { useSync } from "@/hooks/useSync";
+import { useSyncScheduler } from "@/hooks/useSyncScheduler";
 
 export const Route = createFileRoute("/dashboard")({
-  component: DashboardLayout,
+  component: DashboardLayoutInner,
   ssr: false, // Pure SPA — reads from Dexie, works offline
 });
 
@@ -21,7 +24,7 @@ export const Route = createFileRoute("/dashboard")({
  *       div.flex         — sidebar + main content area
  *     KioskOverlay       — portal at z-60, covers everything when kiosk active
  *
- * Requirements: 1.3, 1.4, 5.5
+ * Requirements: 1.3, 1.4, 5.5, 7.1
  */
 function DashboardLayout() {
   return (
@@ -36,6 +39,8 @@ function DashboardLayout() {
                 <Breadcrumbs />
               </div>
               <Outlet />
+              {/* SyncStatusBar — fixed footer showing sync state for all dashboard routes */}
+              <SyncStatusBar />
             </main>
           </div>
         </OnboardingGuard>
@@ -43,4 +48,16 @@ function DashboardLayout() {
       </KioskProvider>
     </AuthGuard>
   );
+}
+
+/**
+ * Inner layout that mounts the auto-sync scheduler.
+ * Rendered inside AuthGuard so useSync/useSyncScheduler have access to auth context.
+ * Kept as a separate component to isolate the hooks from the outer guard tree.
+ */
+function DashboardLayoutInner() {
+  const { sync } = useSync();
+  // Registers the 5-minute auto-sync interval for the full dashboard session (Requirement 7.1)
+  useSyncScheduler(sync);
+  return <DashboardLayout />;
 }
