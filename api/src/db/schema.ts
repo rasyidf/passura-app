@@ -7,6 +7,7 @@ export const clans = sqliteTable("clans", {
   region: text("region"),
   lineageHead: text("lineage_head"),
   syncStatus: text("sync_status").notNull().default("synced"),
+  tenantId: text("tenant_id").notNull().default(""),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -21,6 +22,7 @@ export const elders = sqliteTable("elders", {
   clan: text("clan"),
   role: text("role").notNull().default("validator"), // "superadmin" | "validator" | "participant"
   syncStatus: text("sync_status").notNull().default("synced"),
+  tenantId: text("tenant_id").notNull().default(""),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -34,6 +36,7 @@ export const participants = sqliteTable("participants", {
   next: text("next"),
   notes: text("notes"),
   syncStatus: text("sync_status").notNull().default("synced"),
+  tenantId: text("tenant_id").notNull().default(""),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -46,6 +49,7 @@ export const groups = sqliteTable("groups", {
   description: text("description"),
   members: text("members").notNull().default("[]"), // JSON array of clan IDs
   syncStatus: text("sync_status").notNull().default("synced"),
+  tenantId: text("tenant_id").notNull().default(""),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -60,6 +64,7 @@ export const animalTypes = sqliteTable("animal_types", {
   quality: text("quality").notNull(), // "low" | "medium" | "high" | "unique"
   price: real("price").notNull(),
   syncStatus: text("sync_status").notNull().default("synced"),
+  tenantId: text("tenant_id").notNull().default(""),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -84,6 +89,7 @@ export const loans = sqliteTable("loans", {
   notes: text("notes"),
   summary: text("summary"),
   syncStatus: text("sync_status").notNull().default("synced"),
+  tenantId: text("tenant_id").notNull().default(""),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -106,6 +112,7 @@ export const receipts = sqliteTable("receipts", {
   calculatedValue: real("calculated_value"),
   summary: text("summary"),
   syncStatus: text("sync_status").notNull().default("synced"),
+  tenantId: text("tenant_id").notNull().default(""),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -127,6 +134,7 @@ export const handovers = sqliteTable("handovers", {
   calculatedValue: real("calculated_value"),
   summary: text("summary"),
   syncStatus: text("sync_status").notNull().default("synced"),
+  tenantId: text("tenant_id").notNull().default(""),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -146,6 +154,7 @@ export const obligations = sqliteTable("obligations", {
   calculatedValue: real("calculated_value"),
   summary: text("summary"),
   syncStatus: text("sync_status").notNull().default("synced"),
+  tenantId: text("tenant_id").notNull().default(""),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -158,6 +167,8 @@ export const syncLog = sqliteTable("sync_log", {
   action: text("action").notNull(), // "create" | "update" | "delete"
   data: text("data").notNull().default("{}"), // JSON
   syncStatus: text("sync_status").notNull().default("pending"),
+  syncError: text("sync_error"),
   deviceId: text("device_id"),
+  tenantId: text("tenant_id").notNull().default(""),
   createdAt: integer("created_at").notNull(),
 });

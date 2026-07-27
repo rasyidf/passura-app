@@ -41,71 +41,107 @@ interface PushEntry {
   timestamp: number;
 }
 
+interface PushEntryResult {
+  id: string;
+  status: "synced" | "conflict" | "internal_error";
+  reason?: string;
+}
+
 syncRoutes.post("/push", async (c) => {
-  const body = await c.req.json<{ entries: PushEntry[] }>().catch(() => null);
+  const body = await c.req.json<{ tenantId?: unknown; entries: PushEntry[] }>().catch(() => null);
   if (!body?.entries || !Array.isArray(body.entries)) {
     return c.json({ error: "entries array required" }, 400);
+  }
+
+  // Requirement 3.1: tenantId must be a non-empty string
+  if (!body.tenantId || typeof body.tenantId !== "string" || body.tenantId.trim() === "") {
+    return c.json({ error: "tenantId is required" }, 400);
   }
 
   if (body.entries.length > 200) {
     return c.json({ error: "Max 200 entries per push" }, 400);
   }
 
+  const auth = c.get("auth");
+  const jwtTenantId = auth.tenantId; // JWT claim is the authoritative tenant (R3.3)
+
   const db = drizzle(c.env.DB);
   const now = Math.floor(Date.now() / 1000);
-  const accepted: string[] = [];
-  const rejected: { id: string; reason: string }[] = [];
+  const results: PushEntryResult[] = [];
 
   for (const entry of body.entries) {
     if (!entry.entityType || !entry.entityId || !entry.action || !entry.data) {
-      rejected.push({ id: entry.entityId ?? "unknown", reason: "malformed_entry" });
+      results.push({ id: entry.entityId ?? "unknown", status: "internal_error", reason: "malformed_entry" });
       continue;
     }
 
     const tableKey = entry.entityType as EntityType;
     const table = ENTITY_TABLES[tableKey];
     if (!table) {
-      rejected.push({ id: entry.entityId, reason: "unknown_entity_type" });
+      results.push({ id: entry.entityId, status: "internal_error", reason: "unknown_entity_type" });
       continue;
     }
 
     try {
       if (entry.action === "delete") {
-        await (db.delete(table) as any).where(eq((table as any).id, entry.entityId));
+        // Requirement 3.4: scope delete to tenant; no-op if row belongs to another tenant
+        await (db.delete(table) as any).where(
+          and(eq((table as any).id, entry.entityId), eq((table as any).tenantId, jwtTenantId)),
+        );
       } else if (entry.action === "create") {
-        const row = normalizeRow(entry.entityType, { ...entry.data, id: entry.entityId, syncStatus: "synced", updatedAt: now, createdAt: entry.data.createdAt ?? now });
+        // Requirement 3.3: write JWT tenant_id onto the row — ignore body.tenantId
+        // Pass camelCase keys directly to Drizzle ORM (do NOT normalizeRow here;
+        // normalizeRow is only for outbound denormalization, not Drizzle insert).
+        const row = {
+          ...entry.data,
+          id: entry.entityId,
+          syncStatus: "synced",
+          tenantId: jwtTenantId,
+          updatedAt: now,
+          createdAt: (entry.data.createdAt as number) ?? now,
+        };
         await (db.insert(table) as any).values(row).onConflictDoUpdate({
           target: (table as any).id,
           set: { ...row, syncStatus: "synced", updatedAt: now },
         });
       } else {
-        // update
-        const row = normalizeRow(entry.entityType, { ...entry.data, syncStatus: "synced", updatedAt: now });
+        // update — Requirement 3.3: write JWT tenant_id onto the row
+        // Pass camelCase keys directly to Drizzle ORM.
+        const row = {
+          ...entry.data,
+          syncStatus: "synced",
+          tenantId: jwtTenantId,
+          updatedAt: now,
+        };
         await (db.update(table) as any)
           .set(row)
           .where(eq((table as any).id, entry.entityId));
       }
 
-      // Log to syncLog
+      // Log to syncLog with tenant_id from JWT
       await db.insert(syncLog).values({
         entityType: entry.entityType,
         entityId: entry.entityId,
         action: entry.action,
         data: JSON.stringify(entry.data),
         syncStatus: "synced",
+        tenantId: jwtTenantId,
         createdAt: now,
       });
 
-      accepted.push(entry.entityId);
+      results.push({ id: entry.entityId, status: "synced" });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      rejected.push({ id: entry.entityId, reason: msg.includes("UNIQUE") ? "conflict" : "internal_error" });
+      if (msg.includes("UNIQUE")) {
+        results.push({ id: entry.entityId, status: "conflict", reason: msg });
+      } else {
+        results.push({ id: entry.entityId, status: "internal_error", reason: msg });
+      }
     }
   }
 
   return c.json({
-    accepted: accepted.length,
-    rejected,
+    results,
     serverCursor: String(now),
   });
 });
@@ -113,6 +149,19 @@ syncRoutes.post("/push", async (c) => {
 // ─── GET /pull — send server changes to client ───────────────────────────────
 
 syncRoutes.get("/pull", async (c) => {
+  // Requirement 3.7: tenantId query param must be present
+  const tenantIdParam = c.req.query("tenantId");
+  if (!tenantIdParam) {
+    return c.json({ error: "tenantId query parameter is required" }, 400);
+  }
+
+  // Requirement 3.5: tenantId param must match JWT claim
+  const auth = c.get("auth");
+  const jwtTenantId = auth.tenantId;
+  if (tenantIdParam !== jwtTenantId) {
+    return c.json({ error: "tenantId mismatch" }, 403);
+  }
+
   const db = drizzle(c.env.DB);
   const since = parseInt(c.req.query("since") ?? "0", 10);
 
@@ -131,14 +180,16 @@ syncRoutes.get("/pull", async (c) => {
   const result: Record<string, { data: unknown[]; hasMore: boolean }> = {};
 
   for (const { key, table } of tables) {
+    // Requirement 3.6: filter by tenant_id AND updated_at > since
     const rows = await (db.select() as any)
       .from(table)
-      .where(gt((table as any).updatedAt, since))
+      .where(and(eq((table as any).tenantId, jwtTenantId), gt((table as any).updatedAt, since)))
       .orderBy(asc((table as any).updatedAt))
       .limit(PULL_LIMIT)
       .all();
 
     result[key] = {
+      // Requirement 5.5: hasMore = rows.length >= PULL_LIMIT (500)
       data: rows.map((r: any) => denormalizeRow(key, r)),
       hasMore: rows.length >= PULL_LIMIT,
     };
@@ -188,6 +239,7 @@ function normalizeRow(entityType: string, data: Record<string, unknown>): Record
     lineageHead: "lineage_head",
     geneticLine: "genetic_line",
     passwordHash: "password_hash",
+    tenantId: "tenant_id",
   };
 
   for (const [from, to] of Object.entries(renames)) {
@@ -202,6 +254,7 @@ function normalizeRow(entityType: string, data: Record<string, unknown>): Record
 
 /**
  * Convert DB row (snake_case, JSON strings) back to camelCase Dexie entity format.
+ * Strips `tenant_id` — clients do not need the server-side tenant column.
  */
 function denormalizeRow(entityType: string, row: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...row };
@@ -244,6 +297,9 @@ function denormalizeRow(entityType: string, row: Record<string, unknown>): Recor
       delete out[from];
     }
   }
+
+  // Strip tenant_id — clients use their local appConfig["tenant-id"] for tenant scoping
+  delete out["tenant_id"];
 
   return out;
 }

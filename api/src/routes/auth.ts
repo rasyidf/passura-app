@@ -37,8 +37,13 @@ authRoutes.post("/login", async (c) => {
     return c.json({ error: "Invalid credentials" }, 401);
   }
 
+  // Requirement 3.10: elder must have a tenantId assigned before a JWT is issued
+  if (!elder.tenantId) {
+    return c.json({ error: "Account is not associated with a tenant" }, 403);
+  }
+
   const token = await signJwt(
-    { elderId: elder.id, email: elder.email, role: elder.role },
+    { elderId: elder.id, email: elder.email, role: elder.role, tenantId: elder.tenantId },
     c.env.JWT_SECRET,
   );
 

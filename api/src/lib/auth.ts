@@ -7,6 +7,7 @@ export interface JwtPayload {
   elderId: string;
   email: string;
   role: string;
+  tenantId: string;   // tenant scoping claim
   iat: number;
   exp: number;
 }
