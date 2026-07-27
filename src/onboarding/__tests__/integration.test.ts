@@ -1,41 +1,38 @@
 /**
  * Integration tests for the full onboarding state lifecycle.
  *
- * Tests the useOnboardingState hook against a mocked in-memory appConfig store,
- * covering the full elder onboarding flow, resume from partial state, and skip.
+ * Tests the useOnboardingState hook against a real in-memory Dexie instance
+ * powered by fake-indexeddb, covering the full elder onboarding flow,
+ * resume from partial state, and skip.
  *
  * Requirements: 1.1, 1.2, 1.5, 1.6
  */
 
+import "fake-indexeddb/auto";
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
 import { useOnboardingState } from "@/onboarding/useOnboardingState";
 import { ELDER_STEPS, getResumeStep } from "@/onboarding/onboarding-state";
 import type { OnboardingState } from "@/onboarding/onboarding-state";
+import { PassuraDb } from "@/db/local-db";
 
-// ─── Mock @/db/local-db ───────────────────────────────────────────────────────
+// ─── In-memory Dexie instance ─────────────────────────────────────────────────
 //
-// We replicate the same in-memory appConfig store pattern used in overlay.test.tsx.
-// This avoids a real IndexedDB instance while still exercising hook logic faithfully.
+// We mock `@/db/local-db` so `db` and `useLiveQuery` inside the hook both point
+// to the same in-memory PassuraDb instance backed by fake-indexeddb.
 
-const appConfigStore = new Map<string, unknown>();
+let testDb: PassuraDb;
 
-vi.mock("@/db/local-db", () => ({
-  db: {
-    appConfig: {
-      get: vi.fn(async (key: string) => {
-        const value = appConfigStore.get(key);
-        return value !== undefined ? { key, value } : undefined;
-      }),
-      put: vi.fn(async ({ key, value }: { key: string; value: unknown }) => {
-        appConfigStore.set(key, value);
-      }),
-      delete: vi.fn(async (key: string) => {
-        appConfigStore.delete(key);
-      }),
-    },
-  },
-}));
+vi.mock("@/db/local-db", async () => {
+  const { PassuraDb } = await vi.importActual<typeof import("@/db/local-db")>("@/db/local-db");
+  const instance = new PassuraDb();
+  return { db: instance, PassuraDb, __testInstance: instance };
+});
+
+beforeAll(async () => {
+  const mod = await import("@/db/local-db");
+  testDb = (mod as typeof mod & { __testInstance: PassuraDb }).__testInstance;
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -43,7 +40,7 @@ const ONBOARDING_KEY = "onboarding-state";
 const TEST_USER_ID = "test-elder-001";
 
 /** Writes an OnboardingState directly to the fake store (simulates pre-existing DB state). */
-function seedState(partial: Partial<OnboardingState>) {
+async function seedState(partial: Partial<OnboardingState>) {
   const base: OnboardingState = {
     userId: TEST_USER_ID,
     role: "validator",
@@ -54,19 +51,20 @@ function seedState(partial: Partial<OnboardingState>) {
     skipSessionCount: 0,
     reminderDismissed: false,
   };
-  appConfigStore.set(ONBOARDING_KEY, { ...base, ...partial });
+  await testDb.appConfig.put({ key: ONBOARDING_KEY, value: { ...base, ...partial } });
 }
 
-/** Reads the current state from the fake store. */
-function readState(): OnboardingState | undefined {
-  return appConfigStore.get(ONBOARDING_KEY) as OnboardingState | undefined;
+/** Reads the current state from the in-memory DB. */
+async function readState(): Promise<OnboardingState | undefined> {
+  const record = await testDb.appConfig.get(ONBOARDING_KEY);
+  return record?.value as OnboardingState | undefined;
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("Integration: Full Elder Onboarding lifecycle", () => {
-  beforeEach(() => {
-    appConfigStore.clear();
+  beforeEach(async () => {
+    await testDb.appConfig.clear();
     vi.clearAllMocks();
   });
 
@@ -99,7 +97,7 @@ describe("Integration: Full Elder Onboarding lifecycle", () => {
       expect(typeof result.current.state?.completedAt).toBe("number");
 
       // Persisted state in fake DB should also reflect completion
-      const persisted = readState();
+      const persisted = await readState();
       expect(persisted?.isComplete).toBe(true);
       expect(persisted?.completedAt).not.toBeNull();
     });
@@ -115,7 +113,7 @@ describe("Integration: Full Elder Onboarding lifecycle", () => {
         });
       }
 
-      const persisted = readState();
+      const persisted = await readState();
       // Every ELDER_STEPS entry must appear in completedSteps
       for (const stepId of ELDER_STEPS) {
         expect(persisted?.completedSteps).toContain(stepId);
@@ -133,7 +131,7 @@ describe("Integration: Full Elder Onboarding lifecycle", () => {
         await result.current.completeStep("elder-welcome");
       });
 
-      const persisted = readState();
+      const persisted = await readState();
       expect(persisted?.completedSteps).toContain("elder-welcome");
     });
 
@@ -149,7 +147,7 @@ describe("Integration: Full Elder Onboarding lifecycle", () => {
         await result.current.completeStep("elder-welcome");
       });
 
-      const persisted = readState();
+      const persisted = await readState();
       const welcomeCount = persisted?.completedSteps.filter(
         (s) => s === "elder-welcome"
       ).length ?? 0;
@@ -173,7 +171,7 @@ describe("Integration: Full Elder Onboarding lifecycle", () => {
 
     it("hook loads partial state from DB and exposes the correct completedSteps", async () => {
       // Seed the DB with two completed steps (mimics ElderOnboardingWizard resume scenario)
-      seedState({ completedSteps: ["elder-welcome", "elder-clans"], isComplete: false });
+      await seedState({ completedSteps: ["elder-welcome", "elder-clans"], isComplete: false });
 
       const { result } = renderHook(() => useOnboardingState(TEST_USER_ID));
 
@@ -203,15 +201,18 @@ describe("Integration: Full Elder Onboarding lifecycle", () => {
 
     it("state is null when DB has a record for a different userId", async () => {
       // Seed state belonging to a different user
-      appConfigStore.set(ONBOARDING_KEY, {
-        userId: "other-user-999",
-        role: "validator",
-        completedSteps: ["elder-welcome"],
-        isComplete: false,
-        completedAt: null,
-        skipped: false,
-        skipSessionCount: 0,
-        reminderDismissed: false,
+      await testDb.appConfig.put({
+        key: ONBOARDING_KEY,
+        value: {
+          userId: "other-user-999",
+          role: "validator",
+          completedSteps: ["elder-welcome"],
+          isComplete: false,
+          completedAt: null,
+          skipped: false,
+          skipSessionCount: 0,
+          reminderDismissed: false,
+        },
       });
 
       const { result } = renderHook(() => useOnboardingState(TEST_USER_ID));
@@ -242,7 +243,7 @@ describe("Integration: Full Elder Onboarding lifecycle", () => {
       expect(result.current.state?.completedSteps).toEqual([]);
 
       // Verify persistence
-      const persisted = readState();
+      const persisted = await readState();
       expect(persisted?.isComplete).toBe(true);
       expect(persisted?.skipped).toBe(true);
       expect(persisted?.completedSteps).toEqual([]);
@@ -269,7 +270,7 @@ describe("Integration: Full Elder Onboarding lifecycle", () => {
 
     it("skip() clears any previously accumulated completedSteps", async () => {
       // Seed with some completed steps before skip
-      seedState({ completedSteps: ["elder-welcome", "elder-clans"], isComplete: false });
+      await seedState({ completedSteps: ["elder-welcome", "elder-clans"], isComplete: false });
 
       const { result } = renderHook(() => useOnboardingState(TEST_USER_ID));
 
@@ -284,7 +285,7 @@ describe("Integration: Full Elder Onboarding lifecycle", () => {
 
       expect(result.current.state?.completedSteps).toEqual([]);
 
-      const persisted = readState();
+      const persisted = await readState();
       expect(persisted?.completedSteps).toEqual([]);
     });
   });

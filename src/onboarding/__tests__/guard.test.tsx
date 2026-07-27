@@ -104,7 +104,7 @@ describe('OnboardingGuard', () => {
   // ── 1. Loading state ──────────────────────────────────────────────────────
 
   describe('loading state', () => {
-    it('shows a loading spinner while onboarding state is being read', () => {
+    it('renders children immediately even while onboarding state is loading', () => {
       setupAuth('validator')
       mockUseOnboardingState.mockReturnValue({
         state: null,
@@ -123,10 +123,10 @@ describe('OnboardingGuard', () => {
         </OnboardingGuard>,
       )
 
-      // Children should not be visible; instead a spinner is shown
-      expect(screen.queryByTestId('dashboard-content')).not.toBeInTheDocument()
-      // The loading screen renders an svg spinner (Lucide Loader2)
-      expect(document.querySelector('svg')).toBeInTheDocument()
+      // Children are always rendered (no blocking loading screen)
+      expect(screen.getByTestId('dashboard-content')).toBeInTheDocument()
+      // Wizard portal should NOT be shown while still loading (auth/state not resolved)
+      expect(screen.queryByTestId('elder-onboarding-wizard')).not.toBeInTheDocument()
     })
   })
 

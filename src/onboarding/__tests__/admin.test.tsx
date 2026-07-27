@@ -157,9 +157,9 @@ describe('AdminSetupWizard', () => {
       ).toBeInTheDocument()
     })
 
-    it('starts at Step 2 (Tambah Clan) when admin-welcome is completed', () => {
+    it('starts at Step 2 (Tambah Rumpun Keluarga) when admin-welcome is completed', () => {
       render(<AdminSetupWizard state={makeState(['admin-welcome'])} onComplete={noop} />)
-      expect(screen.getByRole('heading', { name: 'Tambah Clan' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Tambah Rumpun Keluarga' })).toBeInTheDocument()
     })
 
     it('starts at Step 3 (Tambah Jenis Hewan) when first two steps are completed', () => {
@@ -251,7 +251,7 @@ describe('AdminStep2Clans — "Lanjut" gate (Requirement 3.3)', () => {
     fireEvent.click(screen.getByRole('button', { name: /lanjut/i }))
 
     expect(
-      await screen.findByText('Tambahkan minimal satu clan untuk melanjutkan.'),
+      await screen.findByText('Tambahkan minimal satu rumpun keluarga untuk melanjutkan.'),
     ).toBeInTheDocument()
   })
 
@@ -269,7 +269,7 @@ describe('AdminStep2Clans — "Lanjut" gate (Requirement 3.3)', () => {
     render(<AdminStep2Clans onNext={onNext} />)
 
     // Fill in name and save
-    fireEvent.change(screen.getByLabelText(/nama clan/i), {
+    fireEvent.change(screen.getByLabelText(/nama rumpun/i), {
       target: { value: 'Tongkonan Buntu' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^simpan$/i }))
@@ -285,13 +285,13 @@ describe('AdminStep2Clans — "Lanjut" gate (Requirement 3.3)', () => {
   it('shows save confirmation (saved clan appears in list) after clicking "Simpan"', async () => {
     render(<AdminStep2Clans onNext={noop} />)
 
-    fireEvent.change(screen.getByLabelText(/nama clan/i), {
+    fireEvent.change(screen.getByLabelText(/nama rumpun/i), {
       target: { value: 'Tongkonan Rante' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^simpan$/i }))
 
     expect(await screen.findByText('Tongkonan Rante')).toBeInTheDocument()
-    expect(screen.getByText(/clan tersimpan \(1\)/i)).toBeInTheDocument()
+    expect(screen.getByText(/rumpun tersimpan \(1\)/i)).toBeInTheDocument()
   })
 
   it('shows "Simpan" button as disabled when name field is empty', () => {
@@ -304,7 +304,7 @@ describe('AdminStep2Clans — "Lanjut" gate (Requirement 3.3)', () => {
   it('enables "Simpan" when a name is typed', () => {
     render(<AdminStep2Clans onNext={noop} />)
 
-    fireEvent.change(screen.getByLabelText(/nama clan/i), {
+    fireEvent.change(screen.getByLabelText(/nama rumpun/i), {
       target: { value: 'Tongkonan A' },
     })
 

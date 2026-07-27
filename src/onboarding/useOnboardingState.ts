@@ -21,15 +21,27 @@ export function useOnboardingState(userId: string) {
   // useLiveQuery subscribes to the appConfig table — any consumer (guard,
   // wizard) that shares the same key will re-render automatically when another
   // instance writes to IndexedDB, which is what makes the portal auto-dismiss.
+  //
+  // We use a sentinel `null` value to distinguish "loading" from "no record":
+  // - undefined → query still in flight (isLoading = true)
+  // - null      → query resolved, key does not exist
+  // - object    → query resolved, record found
   const rawRecord = useLiveQuery(
-    () => db.appConfig.get(ONBOARDING_KEY),
+    async () => {
+      const result = await db.appConfig.get(ONBOARDING_KEY);
+      // Return null (not undefined) when the key doesn't exist, so
+      // useLiveQuery can distinguish "loading" (undefined) from "empty result" (null)
+      return result ?? null;
+    },
     [ONBOARDING_KEY],
   );
 
   // useLiveQuery returns `undefined` while the initial query is in flight.
   const isLoading = rawRecord === undefined;
 
-  const storedState = rawRecord?.value as OnboardingState | undefined;
+  const storedState = rawRecord != null
+    ? (rawRecord as { value?: unknown }).value as OnboardingState | undefined
+    : undefined;
   const state: OnboardingState | null =
     storedState && storedState.userId === userId ? storedState : null;
 
