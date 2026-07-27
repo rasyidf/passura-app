@@ -162,10 +162,22 @@ export interface SyncLogEntry {
   action: "create" | "update" | "delete";
   data: Record<string, unknown>;
   syncStatus: "pending" | "synced" | "failed" | "conflict";
+  syncError?: string; // stores per-entry rejection reason for conflict entries
   createdAt: number;
 }
 
 // ─── App Config ──────────────────────────────────────────────────────────────
+/**
+ * Key–value store for application configuration persisted in Dexie.
+ *
+ * Well-known keys:
+ * - `session-elder-id`  — local auth session (string)
+ * - `sync-token`        — JWT from `/api/auth/login` (string)
+ * - `sync-cursor`       — Unix timestamp (seconds) of last successful pull (string)
+ * - `tenant-id`         — UUID v4 identifying the local tenant (string)
+ * - `api-url`           — configured API base URL, overrides `VITE_API_URL` (string)
+ * - `auto-sync-enabled` — whether the 5-min auto-sync scheduler is active (boolean)
+ */
 export interface AppConfig {
   key: string;
   value: unknown;

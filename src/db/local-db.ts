@@ -62,6 +62,11 @@ export class PassuraDb extends Dexie {
         await tx.table("participants").put(rest);
       }
     });
+
+    // v5: add syncError index to syncLog for conflict queries
+    this.version(5).stores({
+      syncLog: "++id, entityType, entityId, action, syncStatus, [syncStatus+createdAt], syncError",
+    });
   }
 }
 
