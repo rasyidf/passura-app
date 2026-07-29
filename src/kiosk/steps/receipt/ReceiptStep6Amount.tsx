@@ -56,6 +56,7 @@ export function ReceiptStep6Amount({ draft, onNext, onBack, isLoading }: Receipt
         moneyAmount,
         animalTypeId: null,
         animalTypeName: null,
+        animalTypePrice: null,
         quantity: null,
       })
     } else {
@@ -65,6 +66,7 @@ export function ReceiptStep6Amount({ draft, onNext, onBack, isLoading }: Receipt
         moneyAmount: null,
         animalTypeId,
         animalTypeName: selected?.name ?? null,
+        animalTypePrice: selected?.price ?? null,
         quantity,
       })
     }

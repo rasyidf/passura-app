@@ -27,6 +27,9 @@ export function HandoverStep8Witnesses({ draft, onNext, onBack, isLoading }: Han
   useEffect(() => {
     db.elders.toArray().then((all) => {
       setElders(all)
+      // Drop any persisted witness IDs that no longer exist in the elders table
+      const validIds = new Set(all.map((e) => e.id))
+      setSelectedIds((prev) => prev.filter((id) => validIds.has(id)))
       setLoadingElders(false)
     })
   }, [])

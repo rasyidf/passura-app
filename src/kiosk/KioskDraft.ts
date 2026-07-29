@@ -39,6 +39,8 @@ export interface LoanKioskDraft extends KioskDraftBase {
   animalTypeId: string | null;
   /** Human-readable animal type name — stored for summary display (Requirement 6.4). */
   animalTypeName: string | null;
+  /** Unit price of selected animal type — used to compute calculatedPrincipalValue on save. */
+  animalTypePrice: number | null;
   quantity: number | null;
   dateIssued: string | null; // ISO date string (YYYY-MM-DD)
   witnessIds: string[];
@@ -63,6 +65,8 @@ export interface ReceiptKioskDraft extends KioskDraftBase {
   animalTypeId: string | null;
   /** Human-readable animal type name — stored for summary display (Requirement 7.5). */
   animalTypeName: string | null;
+  /** Unit price of selected animal type — used to compute calculatedValue on save. */
+  animalTypePrice: number | null;
   quantity: number | null;
   dateReceived: string | null; // ISO date string
   witnessIds: string[];
@@ -87,6 +91,8 @@ export interface HandoverKioskDraft extends KioskDraftBase {
   animalTypeId: string | null;
   /** Human-readable animal type name — stored for summary display (Requirement 8.5). */
   animalTypeName: string | null;
+  /** Unit price of selected animal type — used to compute calculatedValue on save. */
+  animalTypePrice: number | null;
   quantity: number | null;
   date: string | null; // ISO date string
   witnessIds: string[];
@@ -153,6 +159,11 @@ export function draftToLoan(
   } else {
     loan.animalType = animalTypeId ?? undefined;
     loan.quantity = quantity ?? undefined;
+    // Compute calculated principal value from price × quantity
+    if (draft.animalTypePrice != null && quantity != null) {
+      loan.calculatedPrincipalValue = draft.animalTypePrice * quantity;
+      loan.remainingValue = loan.calculatedPrincipalValue;
+    }
   }
 
   return loan;
@@ -221,6 +232,10 @@ export function draftToReceipt(
   } else {
     receipt.animalType = animalTypeId ?? undefined;
     receipt.quantity = quantity ?? undefined;
+    // Compute calculated value from price × quantity
+    if (draft.animalTypePrice != null && quantity != null) {
+      receipt.calculatedValue = draft.animalTypePrice * quantity;
+    }
   }
 
   return receipt;
@@ -286,6 +301,10 @@ export function draftToHandover(
   } else {
     handover.animalType = animalTypeId ?? undefined;
     handover.quantity = quantity ?? undefined;
+    // Compute calculated value from price × quantity
+    if (draft.animalTypePrice != null && quantity != null) {
+      handover.calculatedValue = draft.animalTypePrice * quantity;
+    }
   }
 
   return handover;

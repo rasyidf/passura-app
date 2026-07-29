@@ -42,11 +42,20 @@ export function HandoverStep3ToClan({ draft, onNext, onBack, isLoading }: Handov
   const [selectedId, setSelectedId] = useState<string | null>(draft.toClanId)
 
   useEffect(() => {
-    db.clans.toArray().then((all) => {
-      setClans(all)
+    const loadClans = async () => {
+      const all = await db.clans.toArray()
+      // If a group was selected, only show clans that are members of that group
+      if (draft.groupId) {
+        const group = await db.groups.get(draft.groupId)
+        const memberIds = new Set(group?.members ?? [])
+        setClans(memberIds.size > 0 ? all.filter((c) => memberIds.has(c.id)) : all)
+      } else {
+        setClans(all)
+      }
       setLoadingClans(false)
-    })
-  }, [])
+    }
+    loadClans()
+  }, [draft.groupId])
 
   const validationError = validateSameParty(draft.fromClanId, selectedId)
 

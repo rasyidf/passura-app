@@ -27,8 +27,11 @@ export function ReceiptStep8Witnesses({ draft, onNext, onBack, isLoading }: Rece
 
   useEffect(() => {
     db.elders.toArray().then((all) => {
-      // Only show validators as potential witnesses
-      setElders(all.filter((e) => e.role === 'validator'))
+      const validators = all.filter((e) => e.role === 'validator')
+      setElders(validators)
+      // Drop any persisted witness IDs that no longer exist as validators
+      const validIds = new Set(validators.map((e) => e.id))
+      setSelectedIds((prev) => prev.filter((id) => validIds.has(id)))
       setLoadingElders(false)
     })
   }, [])

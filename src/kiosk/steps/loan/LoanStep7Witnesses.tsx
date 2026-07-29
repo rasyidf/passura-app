@@ -29,6 +29,9 @@ export function LoanStep7Witnesses({ draft, onNext, onBack, isLoading }: LoanSte
   useEffect(() => {
     db.elders.toArray().then((all) => {
       setElders(all)
+      // Drop any persisted witness IDs that no longer exist in the elders table
+      const validIds = new Set(all.map((e) => e.id))
+      setSelectedIds((prev) => new Set([...prev].filter((id) => validIds.has(id))))
       setLoadingElders(false)
     })
   }, [])

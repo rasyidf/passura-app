@@ -53,13 +53,14 @@ export function LoanStep5Amount({ draft, onNext, onBack, isLoading }: LoanStep5A
     if (!canAdvance) return
 
     if (draft.loanType === 'money') {
-      await onNext({ currentStep: 5, moneyAmount, animalTypeId: null, quantity: null, animalTypeName: null })
+      await onNext({ currentStep: 5, moneyAmount, animalTypeId: null, quantity: null, animalTypeName: null, animalTypePrice: null })
     } else {
       const selected = animalTypes.find((at) => at.id === animalTypeId)
       await onNext({
         currentStep: 5,
         animalTypeId,
         animalTypeName: selected?.name ?? null,
+        animalTypePrice: selected?.price ?? null,
         quantity,
         moneyAmount: null,
       })

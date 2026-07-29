@@ -54,6 +54,7 @@ export function HandoverStep6Amount({ draft, onNext, onBack, isLoading }: Handov
         moneyAmount,
         animalTypeId: null,
         animalTypeName: null,
+        animalTypePrice: null,
         quantity: null,
       })
     } else {
@@ -62,6 +63,7 @@ export function HandoverStep6Amount({ draft, onNext, onBack, isLoading }: Handov
         currentStep: 6,
         animalTypeId,
         animalTypeName: selectedAnimal?.name ?? null,
+        animalTypePrice: selectedAnimal?.price ?? null,
         quantity,
         moneyAmount: null,
       })
