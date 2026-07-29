@@ -1,7 +1,7 @@
 import { db } from "@/db/local-db";
 import type { BackupFile, ExportResult, ImportResult } from "./backup-types";
 
-export const ENTITY_TABLES = [
+const ENTITY_TABLES = [
   "clans",
   "elders",
   "participants",
@@ -39,7 +39,7 @@ export async function exportBackup(tenantId: string): Promise<ExportResult> {
     }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (entities as any)[table] = sanitized;
+    (entities as Record<EntityTableName, unknown[]>)[table] = sanitized;
     counts[table] = sanitized.length;
   }
 
@@ -134,7 +134,7 @@ export async function applyImport(backup: BackupFile): Promise<ImportResult> {
 
   for (const table of ENTITY_TABLES) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sourceRecords: any[] = backup.entities[table as EntityTableName] ?? [];
+    const sourceRecords: unknown[] = (backup.entities as Record<string, unknown[]>)[table] ?? [];
 
     const records = sourceRecords.map((r) => ({
       ...r,
@@ -142,7 +142,8 @@ export async function applyImport(backup: BackupFile): Promise<ImportResult> {
     }));
 
     try {
-      await (db as any)[table as EntityTableName].bulkPut(records);
+      const tbl = db[table as EntityTableName];
+      await tbl.bulkPut(records as Parameters<typeof tbl.bulkPut>[0]);
       counts[table] = records.length;
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
@@ -157,7 +158,7 @@ export async function applyImport(backup: BackupFile): Promise<ImportResult> {
  * Generates the download filename for a backup file in the format
  * `passura-backup-YYYY-MM-DD.json` using the current local date.
  */
-export function buildFilename(): string {
+function buildFilename(): string {
   const d = new Date();
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");

@@ -10,10 +10,12 @@ import {
   handoversRepo,
   obligationsRepo,
 } from "@/db/repositories";
-import type { BaseEntity } from "@/db/types";
+import type { BaseEntity, Clan, Elder, Participant, Group, AnimalType, Loan, Receipt, Handover, Obligation } from "@/db/types";
 import type { BaseRepository } from "@/db/repositories/base.repo";
 
-const repoMap: Record<string, BaseRepository<any>> = {
+type KnownEntity = Clan | Elder | Participant | Group | AnimalType | Loan | Receipt | Handover | Obligation;
+
+const repoMap: Record<string, BaseRepository<KnownEntity>> = {
   clans: clansRepo,
   elders: eldersRepo,
   participants: participantsRepo,
@@ -54,7 +56,7 @@ export function useLocalQuery<T extends BaseEntity = BaseEntity>(
 /**
  * Get a single document by ID from Dexie.
  */
-export function useLocalDoc<T extends BaseEntity = BaseEntity>(
+function useLocalDoc<T extends BaseEntity = BaseEntity>(
   collection: CollectionName,
   id: string | null | undefined
 ): UseQueryResult<T | undefined> {

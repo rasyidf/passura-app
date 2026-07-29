@@ -14,10 +14,12 @@ import {
   handoversRepo,
   obligationsRepo,
 } from "@/db/repositories";
-import type { BaseEntity } from "@/db/types";
+import type { BaseEntity, Clan, Elder, Participant, Group, AnimalType, Loan, Receipt, Handover, Obligation } from "@/db/types";
 import type { BaseRepository } from "@/db/repositories/base.repo";
 
-const repoMap: Record<string, BaseRepository<any>> = {
+type KnownEntity = Clan | Elder | Participant | Group | AnimalType | Loan | Receipt | Handover | Obligation;
+
+const repoMap: Record<string, BaseRepository<KnownEntity>> = {
   clans: clansRepo,
   elders: eldersRepo,
   participants: participantsRepo,
@@ -37,23 +39,23 @@ type MutationAction = "create" | "update" | "delete";
  * Drop-in replacement for useCreateDoc / useUpdateDoc / useDeleteDoc.
  * Writes to Dexie (IndexedDB) and marks syncStatus = "pending".
  */
-export function useLocalMutation<T extends BaseEntity = BaseEntity>(
+function useLocalMutation<T extends BaseEntity = BaseEntity>(
   collection: CollectionName,
   action: MutationAction
-): UseMutationResult<any, Error, any> {
+): UseMutationResult<KnownEntity | undefined, Error, unknown> {
   const qc = useQueryClient();
   const repo = repoMap[collection];
   if (!repo) throw new Error(`Unknown collection: ${collection}`);
 
   return useMutation({
-    mutationFn: async (payload: any) => {
+    mutationFn: async (payload: unknown) => {
       switch (action) {
         case "create":
-          return repo.create(payload);
+          return repo.create(payload as Omit<KnownEntity, "id" | "syncStatus" | "createdAt" | "updatedAt">);
         case "update":
-          return repo.update(payload.id, payload.data);
+          return repo.update((payload as { id: string; data: Partial<KnownEntity> }).id, (payload as { id: string; data: Partial<KnownEntity> }).data);
         case "delete":
-          return repo.remove(payload);
+          return repo.remove(payload as string);
         default:
           throw new Error(`Unknown action: ${action}`);
       }
