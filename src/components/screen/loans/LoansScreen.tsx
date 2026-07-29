@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocalQuery } from "@/hooks/useLocalQuery";
 import { useDeleteDoc, useUpdateDoc } from "@/hooks/useLocalMutation";
+import { useClanMap } from "@/hooks/useLookupMaps";
 import DataTable from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { Banknote } from "lucide-react";
-import type { Loan, Clan, AnimalType, Repayment } from "@/db/types";
+import type { Loan, AnimalType, Repayment } from "@/db/types";
 import { MoneyCell } from "@/components/ui/money-cell";
 import { ClanLink } from "@/components/shared/screen-helpers";
 import { QuickRepaymentDialog } from "./QuickRepaymentDialog";
@@ -24,7 +25,6 @@ import {
 
 export default function LoansScreen() {
   const { data, isLoading, refetch } = useLocalQuery<Loan>("loans");
-  const { data: clansData } = useLocalQuery<Clan>("clans");
   const { data: animalsData } = useLocalQuery<AnimalType>("animal-types");
   const deleteLoan = useDeleteDoc("loans");
   const updateLoan = useUpdateDoc("loans");
@@ -32,14 +32,10 @@ export default function LoansScreen() {
   const [deleteItem, setDeleteItem] = useState<LoanRow | null>(null);
   const [payItem, setPayItem] = useState<LoanRow | null>(null);
 
-  const clans = clansData?.docs ?? [];
   const animalTypes = animalsData?.docs ?? [];
   const docs = data?.docs ?? [];
 
-  const clanMap = useMemo(
-    () => Object.fromEntries(clans.map((c) => [c.id, c.name])),
-    [clans],
-  );
+  const clanMap = useClanMap();
 
   const rows: LoanRow[] = docs.map((l) => ({
     ...l,

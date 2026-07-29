@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useLocalQuery } from "@/hooks/useLocalQuery";
+import { useClanMap } from "@/hooks/useLookupMaps";
 import { useCreateDoc, useUpdateDoc, useDeleteDoc } from "@/hooks/useLocalMutation";
 import DataTable from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -30,10 +31,7 @@ export default function ParticipantsScreen() {
   const clans = clansData?.docs ?? [];
   const rows = data?.docs ?? [];
 
-  const clanMap = useMemo(
-    () => Object.fromEntries(clans.map((c) => [c.id, c.name])),
-    [clans],
-  );
+  const clanMap = useClanMap();
 
   const clanOptions = useMemo(
     () => clans.map((c) => ({ value: c.id, label: c.name, description: c.region })),
