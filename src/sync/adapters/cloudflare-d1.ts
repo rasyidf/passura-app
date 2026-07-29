@@ -45,8 +45,8 @@ export class CloudflareD1Adapter implements SyncAdapter {
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Login failed" }));
-      return { success: false, error: (err as any).error ?? "Login failed" };
+      const err = await res.json().catch(() => ({ error: "Login failed" })) as { error?: string };
+      return { success: false, error: err.error ?? "Login failed" };
     }
 
     const data = await res.json() as { token: string };

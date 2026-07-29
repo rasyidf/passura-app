@@ -29,8 +29,8 @@ export default function TenantTab({ isSuperadmin }: SettingsTabProps) {
   const currentTenantId = (tenantIdConfig?.value as string | undefined) ?? "";
   const currentApiUrl =
     (apiUrlConfig?.value as string | undefined) ??
-    (typeof (import.meta as any).env?.VITE_API_URL === "string"
-      ? (import.meta as any).env.VITE_API_URL
+    (typeof import.meta.env?.VITE_API_URL === "string"
+      ? import.meta.env.VITE_API_URL
       : "");
 
   // ── Tenant ID edit state ───────────────────────────────────────────────────

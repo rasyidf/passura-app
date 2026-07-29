@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import Dexie from "dexie";
 import { db } from "@/db/local-db";
 import { CloudflareD1Adapter, AuthError } from "@/sync/adapters/cloudflare-d1";
 import type { SyncEntry } from "@/sync/sync-adapter";
@@ -126,7 +127,9 @@ export function useSync() {
         // Apply pulled entities to local Dexie with conflict guard (Requirement 5.3)
         for (const { type, data } of pullResult.entities) {
           const tableName = type === "animal-types" ? "animalTypes" : type;
-          const table = (db as any)[tableName];
+          // Dexie tables are indexed by string at runtime; safe cast required here
+          // since the server is the source of truth for entity type names
+          const table = (db as Record<string, Dexie.Table | undefined>)[tableName];
           if (!table) continue;
 
           for (const row of data) {

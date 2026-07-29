@@ -41,7 +41,7 @@ async function getApiBase(): Promise<string> {
   const cfg = await db.appConfig.get("api-url");
   const stored = cfg?.value as string | undefined;
   if (stored && stored.trim()) return stored.trim();
-  return (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8787";
+  return import.meta.env?.VITE_API_URL ?? "http://localhost:8787";
 }
 
 async function getSyncToken(): Promise<string | null> {
@@ -77,9 +77,9 @@ export default function ConflictsTab({ isSuperadmin }: SettingsTabProps) {
       const res = await fetch(`${apiBase}/api/${entityType}/${entityId}`, { headers });
 
       if (!res.ok) {
-        const errBody = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        const errBody = await res.json().catch(() => ({ error: `HTTP ${res.status}` })) as { error?: string };
         toast.error(
-          `Gagal mengambil data server: ${(errBody as any).error ?? res.statusText}`
+          `Gagal mengambil data server: ${errBody.error ?? res.statusText}`
         );
         return;
       }
